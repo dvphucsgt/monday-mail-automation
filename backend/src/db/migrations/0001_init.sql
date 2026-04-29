@@ -1,0 +1,2 @@
+-- Migration 0001: Initial schema
+-- This file is a copy of schema.sql for migration purposes

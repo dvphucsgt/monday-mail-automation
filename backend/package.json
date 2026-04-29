@@ -1,0 +1,27 @@
+{
+  "name": "monday-super-mail-backend",
+  "version": "1.0.0",
+  "description": "Backend for Monday Supermail app",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev -e dev",
+    "deploy": "wrangler deploy -e production",
+    "d1:create": "wrangler d1 create SUPERMAIL_DB",
+    "d1:apply": "wrangler d1 migrations apply SUPERMAIL_DB --local",
+    "d1:apply:prod": "wrangler d1 migrations apply SUPERMAIL_DB",
+    "d1:query": "wrangler d1 execute SUPERMAIL_DB --local --command",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20240806.0",
+    "crypto-js": "^4.2.0",
+    "googleapis": "^150.0.1",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "@types/jsonwebtoken": "^9.0.6",
+    "typescript": "^5.5.4",
+    "wrangler": "^3.60.3"
+  }
+}

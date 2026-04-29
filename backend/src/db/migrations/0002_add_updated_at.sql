@@ -1,0 +1,3 @@
+-- Migration 0002: Add updated_at columns
+ALTER TABLE templates ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE integrations ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
