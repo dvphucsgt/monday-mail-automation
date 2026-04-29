@@ -20,3 +20,13 @@ database_id = "YOUR_DATABASE_ID"
 
 [vars]
 ENVIRONMENT = "dev"
+
+[[migrations]]
+tag = "V1"
+new_classes = ["boards", "templates", "integrations", "email_logs", "webhooks"]
+
+[env.dev.migrations_dir]
+dir = "src/db/migrations"
+
+[env.production.migrations_dir]
+dir = "src/db/migrations"

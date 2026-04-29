@@ -24,5 +24,8 @@
     "templates"
   ],
   "author": "Saigon Tech",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4.86.0"
+  }
 }
