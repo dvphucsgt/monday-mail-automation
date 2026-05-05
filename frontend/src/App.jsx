@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { monday } from 'monday-sdk-js'
+import mondaySdk from "monday-sdk-js";
 import AppContext from './utils/AppContext.jsx'
 import AuthPage from './pages/AuthPage.jsx'
 import TemplatesPage from './pages/TemplatesPage.jsx'
 import IntegrationPage from './pages/IntegrationPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 
-const mondaySDK = monday()
+const mondaySDK = mondaySdk();
 
 function App() {
   const [context, setContext] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [currentPage, setCurrentPage] = useState('auth')
+  const [currentPage, setCurrentPage] = useState('templates')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
@@ -36,7 +36,7 @@ function App() {
     return (
       <div className="loading-container">
         <div className="loading-spinner" />
-        <p>Đang tải...</p>
+        <p>Loading...</p>
       </div>
     )
   }
@@ -66,25 +66,7 @@ function App() {
         setIsAuthenticated
       }}
     >
-      <div className="app-container">
-        <nav className="app-nav">
-          <h1>📧 Supermail</h1>
-          {isAuthenticated && (
-            <div className="nav-links">
-              <button onClick={() => setCurrentPage('templates')}>
-                Mẫu Email
-              </button>
-              <button onClick={() => setCurrentPage('integration')}>
-                Tích Hợp
-              </button>
-              <button onClick={() => setCurrentPage('settings')}>
-                Cài Đặt
-              </button>
-            </div>
-          )}
-        </nav>
-        <main className="app-main">{renderPage()}</main>
-      </div>
+      {renderPage()}
     </AppContext.Provider>
   )
 }

@@ -1,0 +1,178 @@
+/* Vibe Components Custom Styles */
+
+/* CSS Variables */
+:root {
+  --primary-color: #0073ea;
+  --primary-hover: #005bb5;
+  --secondary-color: #1a1a1a;
+  --border-color: #e5e7eb;
+  --text-secondary: #6E7278;
+  --text-primary: #1a1a1a;
+  --background-hover: #f5f6f7;
+}
+
+/* Button */
+.vibe-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.vibe-button-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.vibe-button-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.vibe-button-secondary {
+  background-color: white;
+  color: var(--secondary-color);
+  border: 1px solid var(--border-color);
+}
+
+.vibe-button-secondary:hover {
+  background-color: var(--background-hover);
+  border-color: #d1d5db;
+}
+
+.vibe-button-tertiary {
+  background-color: transparent;
+  color: var(--secondary-color);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+}
+
+.vibe-button-tertiary:hover {
+  background-color: var(--background-hover);
+}
+
+.vibe-button-small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* Heading */
+.vibe-heading {
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.vibe-heading-h1 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.vibe-heading-h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.vibe-heading-h3 {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Text */
+.vibe-text {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+.vibe-text-secondary {
+  color: var(--text-secondary);
+}
+
+.vibe-text-small {
+  font-size: 13px;
+}
+
+/* Box */
+.vibe-box {
+  display: block;
+}
+
+.vibe-box-padding-large {
+  padding: 24px;
+}
+
+.vibe-box-padding-medium {
+  padding: 16px;
+}
+
+.vibe-box-padding-small {
+  padding: 12px;
+}
+
+.vibe-box-border {
+  border: 1px solid var(--border-color);
+}
+
+.vibe-box-rounded-medium {
+  border-radius: 8px;
+}
+
+.vibe-box-rounded-small {
+  border-radius: 6px;
+}
+
+.vibe-box-shadow-small {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Flex */
+.vibe-flex {
+  display: flex;
+}
+
+.vibe-flex-row {
+  flex-direction: row;
+}
+
+.vibe-flex-column {
+  flex-direction: column;
+}
+
+.vibe-flex-center {
+  align-items: center;
+  justify-content: center;
+}
+
+.vibe-flex-space-between {
+  justify-content: space-between;
+}
+
+.vibe-flex-space-around {
+  justify-content: space-around;
+}
+
+.vibe-flex-start {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.vibe-flex-end {
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.vibe-flex-wrap {
+  flex-wrap: wrap;
+}

@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "start": "npm run stop && concurrently \"npm run server\" \"npm run expose\"",
     "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
+    "expose": "mapps tunnel:create -p 8301",
+    "server": "vite",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "stop": "kill-port 8301 && kill-port 4049 && kill-port 4040"
   },
   "dependencies": {
     "@mondaycom/apps-sdk": "^2.1.2",
@@ -20,10 +23,12 @@
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^9.2.1",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.1",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.6",
+    "kill-port": "^2.0.1",
     "vite": "^5.2.11"
   }
 }
