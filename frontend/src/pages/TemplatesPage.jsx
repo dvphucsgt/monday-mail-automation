@@ -4,8 +4,9 @@ import { Flex, Box } from '@vibe/layout'
 import { Link } from '@vibe/core'
 import TemplateList from '../components/TemplateList.jsx'
 
-export default function TemplatesPage({ context }) {
-  const { boardId } = context || {}
+export default function TemplatesPage({ context, sessionToken }) {
+  // Use a fallback boardId for local development when testing outside Monday.com
+  const boardId = context?.boardId || 'local-test-board'
 
   const navItemStyle = {
     padding: '8px 16px',
@@ -108,7 +109,7 @@ export default function TemplatesPage({ context }) {
           flexDirection: 'column',
           gap: 24
         }}>
-          <TemplateList boardId={boardId} />
+          <TemplateList boardId={boardId} sessionToken={sessionToken} />
         </Flex>
       </Box>
     </>

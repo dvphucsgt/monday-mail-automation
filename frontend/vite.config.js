@@ -8,7 +8,8 @@ export default defineConfig({
     strictPort: true,
     hmr: {
       port: 8301
-    }
+    },
+    allowedHosts: true,
   },
   build: {
     outDir: 'dist',

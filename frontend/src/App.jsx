@@ -9,22 +9,36 @@ import SettingsPage from './pages/SettingsPage.jsx'
 const mondaySDK = mondaySdk();
 
 function App() {
-  const [context, setContext] = useState(null)
+  const [context, setContext] = useState({ boardId: 'local-test-board' })
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState('templates')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [sessionToken, setSessionToken] = useState(null)
 
   useEffect(() => {
-    mondaySDK
-      .get('context')
-      .then((res) => {
+    // Listen to context changes
+    mondaySDK.listen("context", (res) => {
+      setContext(res.data)
+    })
+
+    // Fallback get context
+    mondaySDK.get("context").then((res) => {
+      if (res.data) {
         setContext(res.data)
-        setLoading(false)
-      })
-      .catch((err) => {
-        console.error('Error getting context:', err)
-        setLoading(false)
-      })
+      }
+    })
+
+    // Get session token for authorized API calls
+    mondaySDK.get("sessionToken").then((token) => {
+      setSessionToken(token.data)
+      setLoading(false)
+    }).catch(err => {
+      console.error('Error getting session token:', err)
+      setLoading(false)
+    })
+
+    // Value created for user
+    mondaySDK.execute("valueCreatedForUser")
   }, [])
 
   const handleAuthSuccess = () => {
@@ -46,7 +60,7 @@ function App() {
       case 'auth':
         return <AuthPage onSuccess={handleAuthSuccess} context={context} />
       case 'templates':
-        return <TemplatesPage context={context} />
+        return <TemplatesPage context={context} sessionToken={sessionToken} />
       case 'integration':
         return <IntegrationPage context={context} />
       case 'settings':

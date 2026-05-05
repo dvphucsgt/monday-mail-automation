@@ -1,6 +1,7 @@
 import type { Env, Integration } from '../utils/types'
 import { errorResponse, successResponse } from '../utils/response'
 import { ValidationError, NotFoundError } from '../utils/errors'
+import { verifyAuth } from '../utils/auth'
 
 export async function handleIntegrations(
   request: Request,
@@ -8,6 +9,13 @@ export async function handleIntegrations(
   url: URL
 ): Promise<Response> {
   const path = url.pathname
+
+  // Verify auth for all integration routes
+  const auth = verifyAuth(request, env, url)
+  if (!auth.isValid) {
+    return errorResponse(new Error(auth.error), auth.status || 401)
+  }
+  const jwtPayload = auth.payload
 
   // GET /integrations?board_id=xxx
   if (path === '/integrations' && request.method === 'GET') {
