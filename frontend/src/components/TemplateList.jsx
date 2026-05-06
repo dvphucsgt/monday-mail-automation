@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Heading, Text } from '@vibe/typography'
 import { Flex, Box } from '@vibe/layout'
 import { EmptyState, Modal, ModalHeader, ModalContent, TextField, TextArea, Avatar, Tooltip } from '@vibe/core'
+import { CKEditor } from '@ckeditor/ckeditor5-react'
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 import AppContext from '../utils/AppContext'
 import LoginModal from './LoginModal'
 import { BASE_API_URL } from '../utils/constants'
@@ -52,6 +54,7 @@ const Button = ({ children, kind = 'primary', size = 'medium', onClick, style = 
 
 export default function TemplateList({ boardId, sessionToken }) {
   const { currentUser } = React.useContext(AppContext)
+  const editorRef = React.useRef(null)
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -493,73 +496,218 @@ export default function TemplateList({ boardId, sessionToken }) {
                 </div>
               </Flex>
 
-              {/* Toolbar */}
-              <Flex style={{ padding: '8px 24px', borderBottom: '1px solid #E5E7EB', alignItems: 'center', gap: 16, overflowX: 'auto', flexWrap: 'nowrap', backgroundColor: '#fff' }}>
-                <Flex style={{ gap: 12, alignItems: 'center', color: '#6E7278', cursor: 'pointer' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path></svg>
+              {/* Formatting Toolbar (Restored Design with Clickable Buttons) */}
+              <Flex style={{ padding: '8px 24px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#F5F6F7', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                  <div
+                    onClick={() => editorRef.current?.execute('undo')}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path></svg>
+                  </div>
+                  <div
+                    onClick={() => editorRef.current?.execute('redo')}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path></svg>
+                  </div>
                 </Flex>
+
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
+
                 <Flex style={{ gap: 12, alignItems: 'center', color: '#323338', fontSize: 13, cursor: 'pointer' }}>
-                  <span>Arial</span>
-                  <span>12px</span>
+                  <Flex style={{ alignItems: 'center', gap: 4 }}>
+                    <span>Arial</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </Flex>
+                  <Flex style={{ alignItems: 'center', gap: 4 }}>
+                    <span>12px</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </Flex>
                 </Flex>
+
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
-                <Flex style={{ gap: 12, alignItems: 'center', color: '#323338', cursor: 'pointer' }}>
-                  <span style={{ fontWeight: 700, fontSize: 15 }}>A</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                </Flex>
-                <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
-                <Flex style={{ gap: 12, alignItems: 'center', color: '#6E7278', cursor: 'pointer' }}>
-                  <span style={{ fontWeight: 700, color: '#323338' }}>B</span>
-                  <span style={{ fontStyle: 'italic', color: '#323338' }}>I</span>
-                  <span style={{ textDecoration: 'underline', color: '#6E7278' }}>U</span>
-                  <span style={{ textDecoration: 'line-through', color: '#6E7278' }}>S</span>
-                </Flex>
-                <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
-                <Flex style={{ gap: 12, alignItems: 'center', color: '#6E7278', cursor: 'pointer' }}>
-                  <div style={{ padding: '4px 6px', backgroundColor: '#cce5ff', borderRadius: 4, color: '#0073ea', display: 'flex', alignItems: 'center' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
+
+                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                  <div
+                    onClick={() => editorRef.current?.execute('bold')}
+                    style={{ padding: '4px 8px', cursor: 'pointer', borderRadius: 4, fontWeight: 700, color: '#323338' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    B
                   </div>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
-                  <div style={{ padding: '4px 6px', backgroundColor: '#cce5ff', borderRadius: 4, color: '#0073ea', display: 'flex', alignItems: 'center' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
+                  <div
+                    onClick={() => editorRef.current?.execute('italic')}
+                    style={{ padding: '4px 8px', cursor: 'pointer', borderRadius: 4, fontStyle: 'italic', color: '#323338', fontFamily: 'serif' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    I
+                  </div>
+                  <div
+                    onClick={() => {
+                      // Note: Standard ClassicEditor doesn't have underline by default, 
+                      // but we'll map it in case you add the plugin
+                      editorRef.current?.execute('underline');
+                    }}
+                    style={{ padding: '4px 8px', cursor: 'pointer', borderRadius: 4, textDecoration: 'underline', color: '#6E7278' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    U
+                  </div>
+                  <div
+                    onClick={() => editorRef.current?.execute('strikethrough')}
+                    style={{ padding: '4px 8px', cursor: 'pointer', borderRadius: 4, textDecoration: 'line-through', color: '#6E7278' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    S
                   </div>
                 </Flex>
+
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
-                <Text style={{ fontSize: 13, color: '#6E7278', cursor: 'pointer' }}>Text</Text>
-                <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
-                <Flex style={{ gap: 12, alignItems: 'center', color: '#6E7278', cursor: 'pointer' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="4" y2="6"></line><line x1="3" y1="12" x2="4" y2="12"></line><line x1="3" y1="18" x2="4" y2="18"></line></svg>
+
+                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                  <div
+                    onClick={() => editorRef.current?.execute('bulletedList')}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  </div>
+                  <div
+                    onClick={() => editorRef.current?.execute('numberedList')}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+                  </div>
                 </Flex>
+
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
-                <Flex style={{ gap: 12, alignItems: 'center', color: '#6E7278', cursor: 'pointer' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.41 5.41a2 2 0 1 0 2.83 2.83l5.41-5.41z"></path></svg>
+
+                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                  <div
+                    onClick={() => editorRef.current?.execute('alignment', { value: 'left' })}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#323338" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
+                  </div>
+                  <div
+                    onClick={() => editorRef.current?.execute('alignment', { value: 'center' })}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#323338" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="10" x2="6" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="18" y1="18" x2="6" y2="18"></line></svg>
+                  </div>
+                  <div
+                    onClick={() => editorRef.current?.execute('alignment', { value: 'right' })}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#323338" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
+                  </div>
+                </Flex>
+
+                <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
+
+                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                  <div
+                    onClick={() => editorRef.current?.execute('insertTable')}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#323338" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+                  </div>
+                </Flex>
+
+                <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
+
+                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                  <div
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                  </div>
+                  <div
+                    onClick={() => editorRef.current?.execute('imageUpload')}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  </div>
+                </Flex>
+
+                <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
+
+                <Flex style={{ gap: 12, alignItems: 'center' }}>
+                  <div
+                    onClick={() => editorRef.current?.execute('link')}
+                    style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  </div>
+                  <div style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                  </div>
                 </Flex>
               </Flex>
 
-              {/* Body Textarea */}
-              <Box style={{ flex: 1, display: 'flex', position: 'relative' }}>
-                <Text style={{ position: 'absolute', top: 16, left: 24, color: '#6E7278', fontSize: 14, pointerEvents: 'none', display: formData.body ? 'none' : 'block' }}>Body</Text>
-                <textarea
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    outline: 'none',
-                    padding: '16px 24px',
-                    fontSize: 14,
-                    resize: 'none',
-                    fontFamily: 'inherit',
-                    color: '#323338',
-                    backgroundColor: 'transparent'
+              {/* CKEditor Area */}
+              <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <style>{`
+                  .ck-editor {
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                  }
+                  .ck-editor__top {
+                    display: none !important;
+                  }
+                  .ck-editor__main {
+                    flex: 1;
+                    overflow-y: auto;
+                  }
+                  .ck-content {
+                    height: 100%;
+                    min-height: 400px;
+                    border: none !important;
+                    box-shadow: none !important;
+                    padding: 16px 24px !important;
+                  }
+                `}</style>
+                <CKEditor
+                  editor={ClassicEditor}
+                  data={formData.body}
+                  onReady={editor => {
+                    editorRef.current = editor;
                   }}
-                  value={formData.body}
-                  onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                  onChange={(event, editor) => {
+                    const data = editor.getData();
+                    setFormData({ ...formData, body: data });
+                  }}
+                  config={{
+                    placeholder: 'Write your email content here...',
+                    toolbar: [] // Empty toolbar, we use our own
+                  }}
                 />
               </Box>
             </Box>
@@ -613,7 +761,13 @@ export default function TemplateList({ boardId, sessionToken }) {
                       <div
                         key={chip}
                         onClick={() => {
-                          setFormData({ ...formData, body: formData.body + `{{${varName}}}` })
+                          if (editorRef.current) {
+                            editorRef.current.model.change(writer => {
+                              writer.insertText(`{{${varName}}}`, editorRef.current.model.document.selection.getFirstPosition());
+                            });
+                          } else {
+                            setFormData({ ...formData, body: formData.body + `{{${varName}}}` })
+                          }
                         }}
                         style={{
                           padding: '6px 12px',

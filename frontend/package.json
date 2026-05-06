@@ -12,6 +12,8 @@
     "stop": "kill-port 8301 && kill-port 4049 && kill-port 4040"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+    "@ckeditor/ckeditor5-react": "^11.1.2",
     "@mondaycom/apps-sdk": "^2.1.2",
     "@vibe/core": "^3.55.4",
     "monday-sdk-js": "^0.5.5",
