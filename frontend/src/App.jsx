@@ -18,22 +18,25 @@ function App() {
   useEffect(() => {
     // Listen to context changes
     mondaySDK.listen("context", (res) => {
-      setContext(res.data)
-    })
-
-    // Fallback get context
-    mondaySDK.get("context").then((res) => {
       if (res.data) {
         setContext(res.data)
       }
     })
 
-    // Get session token for authorized API calls
-    mondaySDK.get("sessionToken").then((token) => {
-      setSessionToken(token.data)
+    // Promise-based initialization
+    Promise.all([
+      mondaySDK.get("sessionToken"),
+      mondaySDK.get("context")
+    ]).then(([tokenRes, contextRes]) => {
+      if (tokenRes.data) {
+        setSessionToken(tokenRes.data)
+      }
+      if (contextRes.data) {
+        setContext(contextRes.data)
+      }
       setLoading(false)
     }).catch(err => {
-      console.error('Error getting session token:', err)
+      console.error('Error during initialization:', err)
       setLoading(false)
     })
 

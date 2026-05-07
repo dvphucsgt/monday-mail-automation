@@ -4,7 +4,7 @@
   "description": "Backend for Monday Supermail app",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev -e dev",
+    "dev": "killall wrangler ; wrangler dev -e dev",
     "deploy": "wrangler deploy -e production",
     "d1:create": "wrangler d1 create SUPERMAIL_DB",
     "d1:apply": "wrangler d1 migrations apply SUPERMAIL_DB --local",

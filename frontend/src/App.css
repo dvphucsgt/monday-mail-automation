@@ -400,3 +400,44 @@ button:active,
   overflow-y: auto !important;
   min-width: 150px !important;
 }
+
+/* CKEditor Custom Styles */
+.ck-content {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #323338 !important;
+}
+
+/* Fix List Bullets - Make them "inside" and aligned - STRONGER SELECTORS */
+.ck.ck-content ul, 
+.ck.ck-content ol,
+.ck-editor__editable ul,
+.ck-editor__editable ol {
+  list-style-position: inside !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+.ck.ck-content ul li, 
+.ck.ck-content ol li,
+.ck-editor__editable ul li,
+.ck-editor__editable ol li {
+  list-style-type: inherit !important;
+  margin-bottom: 8px !important;
+}
+
+.ck-editor__editable {
+  border-radius: 0 0 12px 12px !important;
+  border: 1px solid #E5E7EB !important;
+  border-top: none !important;
+  box-shadow: none !important;
+  min-height: 450px !important;
+  padding: 32px !important; /* Thêm padding cho vùng soạn thảo nhìn thoáng hơn */
+}
+
+.ck-toolbar {
+  border-radius: 12px 12px 0 0 !important;
+  border: 1px solid #E5E7EB !important;
+  background-color: #F8F9FA !important;
+}

@@ -5,7 +5,9 @@ export interface Env {
   GOOGLE_CLIENT_SECRET?: string
   MICROSOFT_CLIENT_ID?: string
   MICROSOFT_CLIENT_SECRET?: string
+  MONDAY_CLIENT_ID?: string
   MONDAY_CLIENT_SECRET: string
+  MONDAY_SIGNING_SECRET: string
   ENCRYPTION_KEY: string
 }
 

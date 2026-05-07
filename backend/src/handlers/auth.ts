@@ -43,9 +43,9 @@ export async function handleAuth(
       return errorResponse(new ValidationError("board_id is required"), 400);
     }
 
-    // Security check: verify boardId in JWT matches boardId in query
+    // Security check: verify boardId in JWT matches boardId in query (only if boardId exists in JWT)
     const parsedBoardId = parseInt(boardId);
-    if (!isNaN(parsedBoardId) && jwtPayload.dat.boardId !== parsedBoardId) {
+    if (!isNaN(parsedBoardId) && jwtPayload.dat.boardId !== undefined && jwtPayload.dat.boardId !== parsedBoardId) {
       return errorResponse(new Error("Forbidden: Board ID mismatch"), 403);
     }
 
@@ -73,9 +73,9 @@ export async function handleAuth(
       return errorResponse(new ValidationError("board_id is required"), 400);
     }
 
-    // Security check: verify boardId in JWT matches boardId in query
+    // Security check: verify boardId in JWT matches boardId in query (only if boardId exists in JWT)
     const parsedBoardId = parseInt(boardId);
-    if (!isNaN(parsedBoardId) && jwtPayload.dat.boardId !== parsedBoardId) {
+    if (!isNaN(parsedBoardId) && jwtPayload.dat.boardId !== undefined && jwtPayload.dat.boardId !== parsedBoardId) {
       return errorResponse(new Error("Forbidden: Board ID mismatch"), 403);
     }
 
