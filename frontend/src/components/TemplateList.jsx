@@ -8,6 +8,7 @@ import 'ckeditor5/ckeditor5.css'
 import AppContext from '../utils/AppContext'
 import LoginModal from './LoginModal'
 import { BASE_API_URL } from '../utils/constants'
+import TemplateSkeleton from './TemplateSkeleton'
 
 const Button = ({ children, kind = 'primary', size = 'medium', onClick, style = {}, ...props }) => {
   const baseStyle = {
@@ -558,248 +559,231 @@ export default function TemplateList({ boardId, sessionToken }) {
     setTableInserter(null);
   };
 
-  if (loading) {
-    return (
-      <Box style={{ padding: 24 }}>
-        <Flex style={{ justifyContent: 'center', alignItems: 'center' }}>
-          <Text>Loading...</Text>
-        </Flex>
-      </Box>
-    )
-  }
-
   return (
-    <div className="template-list" style={{
-      width: "100%",
-      display: "flex",
-      flexDirection: "column",
-      gap: "24px",
+    <Box style={{
+      padding: '40px 60px',
+      maxWidth: '1240px',
+      margin: '0 auto',
+      minHeight: '100vh',
+      width: '100%',
     }}>
-      {templates.length === 0 ? (
-        <EmptyState
-          title="No templates yet"
-          description="Create your first email template to get started"
-          visual={
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <rect x="8" y="8" width="48" height="48" rx="8" stroke="#E5E7EB" strokeWidth="2" />
-              <path d="M20 28H44M20 36H36M20 44H28" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          }
-          mainAction={{
-            text: 'Create Template',
-            kind: 'primary',
-            onClick: handleCreateTemplate
-          }}
-        />
-      ) : (
-        <>
-          <Box style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, #f4f7ff 100%)',
-            borderRadius: '24px',
-            padding: '15px 30px',
-            border: '1px solid #eef2f6',
-            boxShadow: '0 4px 24px -2px rgba(0, 0, 0, 0.03)',
-            marginBottom: '10px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            {/* Decoration */}
-            <div style={{
-              position: 'absolute',
-              top: '-30px',
-              right: '-30px',
-              width: '150px',
-              height: '150px',
-              background: 'radial-gradient(circle, rgba(0,115,234,0.05) 0%, rgba(255,255,255,0) 70%)',
-              borderRadius: '50%'
-            }} />
+      <Box style={{
+        background: 'linear-gradient(135deg, #ffffff 0%, #f4f7ff 100%)',
+        borderRadius: '24px',
+        padding: '24px 32px',
+        border: '1px solid #eef2f6',
+        boxShadow: '0 4px 24px -2px rgba(0, 0, 0, 0.03)',
+        marginBottom: '24px',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Decoration */}
+        <div style={{
+          position: 'absolute',
+          top: '-30px',
+          right: '-30px',
+          width: '150px',
+          height: '150px',
+          background: 'radial-gradient(circle, rgba(0,115,234,0.05) 0%, rgba(255,255,255,0) 70%)',
+          borderRadius: '50%'
+        }} />
 
-            <Flex style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Heading style={{
-                  fontSize: 28,
-                  fontWeight: 800,
-                  color: '#1a1b23',
-                  fontFamily: 'Outfit, sans-serif',
-                  letterSpacing: '-0.03em',
-                  marginBottom: 10
-                }}>
-                  Email Templates
-                </Heading>
-                <Flex style={{ alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#00c875', boxShadow: '0 0 10px rgba(0,200,117,0.3)' }} />
-                  <Text style={{
-                    color: '#676879',
-                    fontSize: 15,
-                    fontWeight: 500,
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
-                    {templates.length} {templates.length === 1 ? 'template' : 'templates'} ready for your campaigns
-                  </Text>
-                </Flex>
-              </Box>
-              <Button
-                kind="primary"
-                onClick={handleCreateTemplate}
-                style={{
-                  padding: '14px 18px',
-                  borderRadius: '14px',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  boxShadow: '0 6px 16px rgba(0, 115, 234, 0.2)',
-                  fontFamily: 'Inter, sans-serif',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Create New Template
-              </Button>
+        <Flex style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Heading style={{
+              fontSize: 28,
+              fontWeight: 800,
+              color: '#1a1b23',
+              fontFamily: 'Outfit, sans-serif',
+              letterSpacing: '-0.03em',
+              marginBottom: 8
+            }}>
+              Email Templates
+            </Heading>
+            <Flex style={{ alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: loading ? '#f6b93b' : '#00c875', boxShadow: loading ? '0 0 10px rgba(246,185,59,0.3)' : '0 0 10px rgba(0,200,117,0.3)' }} />
+              <Text style={{
+                color: '#676879',
+                fontSize: 15,
+                fontWeight: 500,
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                {loading ? 'Fetching your templates...' : `${templates.length} ${templates.length === 1 ? 'template' : 'templates'} ready for your campaigns`}
+              </Text>
             </Flex>
           </Box>
+          <Button
+            kind="primary"
+            onClick={handleCreateTemplate}
+            style={{
+              padding: '14px 18px',
+              height: 'auto',
+              borderRadius: '14px',
+              fontWeight: 700,
+              fontSize: '15px',
+              boxShadow: '0 8px 20px -4px rgba(0, 115, 234, 0.3)',
+              border: 'none'
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Create Template
+          </Button>
+        </Flex>
+      </Box>
 
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            border: '1px solid #f0f0f0',
-            boxShadow: '0 4px 20px -5px rgba(0,0,0,0.03)',
-            overflow: 'hidden'
-          }}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              textAlign: 'left',
-              tableLayout: 'fixed' // Crucial for respecting column widths
-            }}>
+      {!loading && templates.length === 0 ? (
+        <Box style={{ marginTop: '40px' }}>
+          <EmptyState
+            title="No templates yet"
+            description="Create your first email template to get started"
+            visual={() => (
+              <svg width="120" height="120" viewBox="0 0 64 64" fill="none">
+                <rect x="8" y="8" width="48" height="48" rx="12" stroke="#eef2f6" strokeWidth="2" fill="#f8f9fb" />
+                <path d="M20 24H44M20 32H44M20 40H32" stroke="#d1d5db" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="48" cy="48" r="10" fill="#0073ea" />
+                <path d="M48 44V52M44 48H52" stroke="white" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            )}
+          />
+        </Box>
+      ) : (
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          overflow: 'hidden',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #f0f0f0' }}>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: '#676879', width: '18%' }}>NAME</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: '#676879', width: '18%' }}>SUBJECT</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: '#676879', width: '15%' }}>CONTENT</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: '#676879', width: '10%' }}>TYPE</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: '#676879', width: '10%' }}>OWNER</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: '#676879', width: '15%' }}>CREATED</th>
-                  <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 600, color: '#676879', width: '14%', textAlign: 'right' }}>ACTION</th>
+                <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: '#676879', fontSize: '13px', fontWeight: 600, width: '18%' }}>NAME</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: '#676879', fontSize: '13px', fontWeight: 600, width: '18%' }}>SUBJECT</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: '#676879', fontSize: '13px', fontWeight: 600, width: '15%' }}>CONTENT</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: '#676879', fontSize: '13px', fontWeight: 600, width: '10%' }}>TYPE</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: '#676879', fontSize: '13px', fontWeight: 600, width: '10%' }}>OWNER</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: '#676879', fontSize: '13px', fontWeight: 600, width: '15%' }}>CREATED</th>
+                  <th style={{ padding: '16px 24px', textAlign: 'right', color: '#676879', fontSize: '13px', fontWeight: 600, width: '14%' }}>ACTION</th>
                 </tr>
               </thead>
               <tbody>
-                {templates.map((template) => {
-                  const rawText = template.body
-                    ?.replace(/<[^>]*>?/gm, ' ')
-                    ?.replace(/&nbsp;/g, ' ')
-                    ?.replace(/\s+/g, ' ')
-                    ?.trim() || '';
+                {loading ? (
+                  <TemplateSkeleton rows={5} />
+                ) : (
+                  templates.map((template) => {
+                    const rawText = template.body
+                      ?.replace(/<[^>]*>?/gm, ' ')
+                      ?.replace(/&nbsp;/g, ' ')
+                      ?.replace(/\s+/g, ' ')
+                      ?.trim() || '';
 
-                  const strippedBody = rawText.length > 10
-                    ? rawText.substring(0, 10) + '...'
-                    : rawText;
+                    const strippedBody = rawText.length > 10
+                      ? rawText.substring(0, 10) + '...'
+                      : rawText;
 
-                  const displayName = template.name?.length > 30
-                    ? template.name.substring(0, 30) + '...'
-                    : (template.name || 'Untitled');
+                    const displayName = template.name?.length > 30
+                      ? template.name.substring(0, 30) + '...'
+                      : (template.name || 'Untitled');
 
-                  const displaySubject = template.subject?.length > 40
-                    ? template.subject.substring(0, 40) + '...'
-                    : (template.subject || '-');
+                    const displaySubject = template.subject?.length > 40
+                      ? template.subject.substring(0, 40) + '...'
+                      : (template.subject || '-');
 
-                  return (
-                    <tr
-                      key={template.id}
-                      onClick={() => handleEditTemplate(template)}
-                      style={{
-                        borderBottom: '1px solid #f8f9fa',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f0f7ff'}
-                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      <td style={{ padding: '16px 24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <Text style={{ fontWeight: 600, color: '#1a1b23', fontSize: '14px' }}>{displayName}</Text>
-                      </td>
-                      <td style={{ padding: '16px 24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <Text style={{ color: '#323338', fontSize: '14px' }}>{displaySubject}</Text>
-                      </td>
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{
-                          color: '#676879',
-                          fontSize: '13px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '100%'
-                        }}>
-                          {strippedBody}
-                        </div>
-                      </td>
-                      <td style={{ padding: '16px 24px' }}>
-                        <Box style={{
-                          display: 'inline-block',
-                          padding: '2px 8px',
-                          backgroundColor: '#e8f4fd',
-                          borderRadius: '4px',
-                          color: '#0073ea',
-                          fontSize: '11px',
-                          fontWeight: 600
-                        }}>
-                          Email
-                        </Box>
-                      </td>
-                      <td style={{ padding: '16px 24px' }}>
-                        <Tooltip content="Template Owner">
-                          <Avatar
-                            size={Avatar.sizes.SMALL}
-                            type={Avatar.types.ICON}
-                            icon={() => (
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            )}
-                            backgroundColor={Avatar.colors.DONE_GREEN}
-                          />
-                        </Tooltip>
-                      </td>
-                      <td style={{ padding: '16px 24px' }}>
-                        <Text style={{ color: '#676879', fontSize: '13px' }}>
-                          {new Date(template.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </Text>
-                      </td>
-                      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                        <Flex style={{ justifyContent: 'flex-end', gap: '8px' }}>
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditTemplate(template);
-                            }}
-                            style={{ padding: '6px', cursor: 'pointer', color: '#676879' }}
-                            onMouseOver={(e) => e.currentTarget.style.color = '#0073ea'}
-                            onMouseOut={(e) => e.currentTarget.style.color = '#676879'}
-                          >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"></path></svg>
+                    return (
+                      <tr
+                        key={template.id}
+                        onClick={() => handleEditTemplate(template)}
+                        style={{
+                          borderBottom: '1px solid #f8f9fa',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f0f7ff'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <td style={{ padding: '16px 24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <Text style={{ fontWeight: 600, color: '#1a1b23', fontSize: '14px' }}>{displayName}</Text>
+                        </td>
+                        <td style={{ padding: '16px 24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <Text style={{ color: '#323338', fontSize: '14px' }}>{displaySubject}</Text>
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <div style={{
+                            color: '#676879',
+                            fontSize: '13px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '100%'
+                          }}>
+                            {strippedBody}
                           </div>
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteTemplate(template.id);
-                            }}
-                            style={{ padding: '6px', cursor: 'pointer', color: '#b2b3bd' }}
-                            onMouseOver={(e) => e.currentTarget.style.color = '#e2445c'}
-                            onMouseOut={(e) => e.currentTarget.style.color = '#b2b3bd'}
-                          >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                          </div>
-                        </Flex>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <Box style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            backgroundColor: '#e8f4fd',
+                            borderRadius: '4px',
+                            color: '#0073ea',
+                            fontSize: '11px',
+                            fontWeight: 600
+                          }}>
+                            Email
+                          </Box>
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <Tooltip content="Template Owner">
+                            <Avatar
+                              size={Avatar.sizes.SMALL}
+                              type={Avatar.types.ICON}
+                              icon={() => (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                              )}
+                              backgroundColor={Avatar.colors.DONE_GREEN}
+                            />
+                          </Tooltip>
+                        </td>
+                        <td style={{ padding: '16px 24px' }}>
+                          <Text style={{ color: '#676879', fontSize: '13px' }}>
+                            {new Date(template.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </Text>
+                        </td>
+                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                          <Flex style={{ justifyContent: 'flex-end', gap: '8px' }}>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditTemplate(template);
+                              }}
+                              style={{ padding: '6px', cursor: 'pointer', color: '#676879' }}
+                              onMouseOver={(e) => e.currentTarget.style.color = '#0073ea'}
+                              onMouseOut={(e) => e.currentTarget.style.color = '#676879'}
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4L18.5 2.5z"></path></svg>
+                            </div>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTemplate(template.id);
+                              }}
+                              style={{ padding: '6px', cursor: 'pointer', color: '#b2b3bd' }}
+                              onMouseOver={(e) => e.currentTarget.style.color = '#e2445c'}
+                              onMouseOut={(e) => e.currentTarget.style.color = '#b2b3bd'}
+                            >
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </div>
+                          </Flex>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
-        </>
+        </div>
       )}
 
       <Modal
@@ -2037,6 +2021,6 @@ export default function TemplateList({ boardId, sessionToken }) {
           fetchAuthStatus()
         }}
       />
-    </div>
+    </Box>
   )
 }
