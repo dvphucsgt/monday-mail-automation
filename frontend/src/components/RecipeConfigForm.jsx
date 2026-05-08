@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Flex, Text, Label, Select, Checkbox, Box } from '@vibe/core'
+import { Flex, Text, Label, Checkbox, Box } from '@vibe/core'
 
 export default function RecipeConfigForm({ recipeType, templates, boardColumns, integration, onSubmit, onCancel }) {
   const [templateId, setTemplateId] = useState(integration?.template_id || '')
@@ -27,24 +27,32 @@ export default function RecipeConfigForm({ recipeType, templates, boardColumns, 
       {/* Template Selection */}
       <Box marginBottom="16px">
         <Label>Email Template</Label>
-        <Select value={templateId} onChange={setTemplateId} fullWidth>
+        <select
+          value={templateId}
+          onChange={(e) => setTemplateId(e.target.value)}
+          style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e0e0e0' }}
+        >
           <option value="">Select template</option>
           {templates.map(t => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
-        </Select>
+        </select>
       </Box>
 
       {/* Trigger Column Selection */}
       {needsTriggerColumn && (
         <Box marginBottom="16px">
           <Label>Trigger Column</Label>
-          <Select value={triggerColumn} onChange={setTriggerColumn} fullWidth>
+          <select
+            value={triggerColumn}
+            onChange={(e) => setTriggerColumn(e.target.value)}
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e0e0e0' }}
+          >
             <option value="">Select column</option>
             {boardColumns.filter(c => ['status', 'date', 'people', 'button'].includes(c.type)).map(col => (
               <option key={col.id} value={col.id}>{col.title}</option>
             ))}
-          </Select>
+          </select>
         </Box>
       )}
 
@@ -52,12 +60,16 @@ export default function RecipeConfigForm({ recipeType, templates, boardColumns, 
       {needsTriggerValue && triggerColumn && (
         <Box marginBottom="16px">
           <Label>Trigger When Status Is</Label>
-          <Select value={triggerValue} onChange={setTriggerValue} fullWidth>
+          <select
+            value={triggerValue}
+            onChange={(e) => setTriggerValue(e.target.value)}
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e0e0e0' }}
+          >
             <option value="">Select status</option>
             {boardColumns.find(c => c.id === triggerColumn)?.settings_labels?.map(label => (
               <option key={label} value={label}>{label}</option>
             ))}
-          </Select>
+          </select>
         </Box>
       )}
 
