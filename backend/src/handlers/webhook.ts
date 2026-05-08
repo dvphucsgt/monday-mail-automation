@@ -14,7 +14,15 @@ export async function handleWebhook(
       return errorResponse(new Error('Invalid webhook payload'), 400)
     }
 
-    const { boardId, itemId, columnId, value, type } = event
+    const { boardId, itemId, columnId, value, type, pulseId } = event
+
+    // Handle different event types from Monday
+    let eventType = type
+    if (type === 'create_pulse') {
+      eventType = 'create_pulse'
+    } else if (type === 'update_column_value' || type === 'change_column_value') {
+      eventType = 'change_column_value'
+    }
 
     // Find matching integrations
     const integrations = await env.DB.prepare(`
@@ -27,7 +35,7 @@ export async function handleWebhook(
       .all()
 
     for (const integration of integrations.results as any[]) {
-      const shouldTrigger = evaluateTrigger(integration, type, columnId, value)
+      const shouldTrigger = evaluateTrigger(integration, eventType, columnId, value, pulseId)
 
       if (shouldTrigger) {
         // Send email asynchronously
@@ -46,7 +54,8 @@ function evaluateTrigger(
   integration: any,
   eventType: string,
   columnId: string,
-  value: any
+  value: any,
+  pulseId?: string
 ): boolean {
   const { recipe_type, trigger_column, trigger_value } = integration
 
@@ -66,7 +75,11 @@ function evaluateTrigger(
       )
 
     case 'person_assigned':
-      return eventType === 'change_column_value' && columnId === trigger_column && value?.personsAndTeams?.length > 0
+      return (
+        eventType === 'change_column_value' &&
+        columnId === trigger_column &&
+        value?.personsAndTeams?.length > 0
+      )
 
     case 'item_created':
       return eventType === 'create_pulse'
@@ -77,6 +90,7 @@ function evaluateTrigger(
     case 'button_click':
       return (
         eventType === 'change_column_value' &&
+        columnId === trigger_column &&
         value?.pressed === true
       )
 

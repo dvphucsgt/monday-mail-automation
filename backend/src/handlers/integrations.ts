@@ -82,7 +82,7 @@ export async function handleIntegrations(
       .run()
 
     // Create webhook
-    const webhookId = await createMondayWebhook(env, boardId, result.meta.last_row_id)
+    const webhookId = await createMondayWebhook(env, boardId, result.meta.last_row_id, recipe_type)
 
     if (webhookId) {
       await env.DB.prepare(`
@@ -196,17 +196,30 @@ export async function handleIntegrations(
 async function createMondayWebhook(
   env: Env,
   boardId: string,
-  integrationId: number
+  integrationId: number,
+  recipeType: string
 ): Promise<string | null> {
   try {
     const webhookUrl = `${env.MONDAY_WEBHOOK_URL || 'https://your-worker.workers.dev'}/webhook`
+
+    // Map recipe types to Monday webhook events
+    const eventMap: Record<string, string> = {
+      status_change: 'change_column_value',
+      date_reached: 'change_column_value',
+      person_assigned: 'change_column_value',
+      button_click: 'change_column_value',
+      item_created: 'create_pulse',
+      item_updated: 'update_column_value'
+    }
+
+    const eventType = eventMap[recipeType] || 'change_column_value'
 
     const mutation = `
       mutation {
         create_webhook(
           board_id: ${boardId}
           url: "${webhookUrl}"
-          event: change_column_value
+          event: ${eventType}
           config: "{\\"columnIds\\": [\\"all\\"]}"
         ) {
           id
