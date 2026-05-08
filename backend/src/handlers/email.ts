@@ -234,21 +234,52 @@ async function prepareAttachments(
   const result = []
 
   for (const attachment of attachments) {
-    if (attachment.source === 'monday') {
-      // Get file from Monday column
-      const columnValue = itemData?.column_values?.find(
-        (cv: any) => cv.id === attachment.column_id
-      )
-      if (columnValue?.value) {
-        const files = JSON.parse(columnValue.value)
-        result.push(...files)
+    try {
+      // 1. If it already has base64 data, use it directly
+      if (attachment.data) {
+        result.push({
+          name: attachment.name,
+          type: attachment.type,
+          data: attachment.data
+        })
+        continue
       }
-    } else if (attachment.source === 'upload') {
-      // Uploaded file
-      result.push({
-        name: attachment.name,
-        url: attachment.url
-      })
+
+      // 2. If it has a URL (common for Monday assets), fetch the content
+      if (attachment.url) {
+        console.log(`Fetching attachment from URL: ${attachment.url}`)
+        const response = await fetch(attachment.url)
+        if (response.ok) {
+          const blob = await response.blob()
+          const arrayBuffer = await blob.arrayBuffer()
+          const base64 = btoa(
+            new Uint8Array(arrayBuffer).reduce(
+              (data, byte) => data + String.fromCharCode(byte),
+              ''
+            )
+          )
+          
+          result.push({
+            name: attachment.name,
+            type: attachment.type || blob.type,
+            data: `data:${attachment.type || blob.type};base64,${base64}`
+          })
+        }
+        continue
+      }
+
+      // 3. Fallback for old "source" format if it exists
+      if (attachment.source === 'monday') {
+        const columnValue = itemData?.column_values?.find(
+          (cv: any) => cv.id === attachment.column_id
+        )
+        if (columnValue?.value) {
+          const files = JSON.parse(columnValue.value)
+          result.push(...files)
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to prepare attachment ${attachment.name}:`, err)
     }
   }
 

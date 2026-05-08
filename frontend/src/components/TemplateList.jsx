@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import mondaySdk from 'monday-sdk-js'
 import { Heading, Text } from '@vibe/typography'
 import { Flex, Box } from '@vibe/layout'
 import { EmptyState, Modal, ModalHeader, Avatar, Tooltip } from '@vibe/core'
@@ -54,9 +55,13 @@ const Button = ({ children, kind = 'primary', size = 'medium', onClick, style = 
   )
 }
 
+const monday = mondaySdk()
+
 export default function TemplateList({ boardId, sessionToken }) {
   const { currentUser } = React.useContext(AppContext)
   const editorRef = React.useRef(null)
+  const [boardColumns, setBoardColumns] = useState([])
+  const [boardAssets, setBoardAssets] = useState([])
 
   // Inject specific fix styles for CKEditor layout
   useEffect(() => {
@@ -75,7 +80,6 @@ export default function TemplateList({ boardId, sessionToken }) {
         }
         .ck-content li {
           display: list-item !important;
-          margin-bottom: 8px !important;
           list-style-type: inherit !important;
           padding-left: 10px !important;
         }
@@ -153,7 +157,74 @@ export default function TemplateList({ boardId, sessionToken }) {
   useEffect(() => {
     fetchTemplates()
     fetchAuthStatus()
+    fetchBoardColumns()
   }, [boardId])
+
+  const DEFAULT_COLUMNS = [
+    { id: 'name', title: 'Name', type: 'name' },
+    { id: 'person', title: 'Person', type: 'people' },
+    { id: 'status', title: 'Status', type: 'color' },
+    { id: 'date4', title: 'Date', type: 'date' },
+    { id: 'email', title: 'Email', type: 'email' },
+    { id: 'text_email', title: 'Text email', type: 'text' },
+    { id: 'contacts', title: 'Contacts', type: 'text' },
+    { id: 'mirror_email', title: 'Mirror-email', type: 'lookup' },
+    { id: 'mirror_person', title: 'Mirror person', type: 'lookup' },
+    { id: 'mirror_text', title: 'Mirror - text', type: 'lookup' },
+  ]
+
+  const fetchBoardColumns = async () => {
+    if (!boardId) {
+      // Fallback columns for local development or invalid boardId
+      setBoardColumns(DEFAULT_COLUMNS)
+      return
+    }
+    try {
+      const res = await monday.api(`
+        query {
+          boards(ids: [${boardId}]) {
+            columns {
+              id
+              title
+              type
+            }
+            items_page (limit: 50) {
+              items {
+                assets {
+                  id
+                  name
+                  file_extension
+                  file_size
+                  public_url
+                }
+              }
+            }
+          }
+        }
+      `)
+
+      const boardData = res?.data?.boards?.[0]
+      const columns = boardData?.columns || []
+      setBoardColumns(columns.length > 0 ? columns : DEFAULT_COLUMNS)
+
+      // Extract unique assets from items
+      const allAssets = []
+      const assetIds = new Set()
+
+      boardData?.items_page?.items?.forEach(item => {
+        item.assets?.forEach(asset => {
+          if (!assetIds.has(asset.id)) {
+            assetIds.add(asset.id)
+            allAssets.push(asset)
+          }
+        })
+      })
+      setBoardAssets(allAssets)
+    } catch (err) {
+      console.error('Error fetching board data:', err)
+      setBoardColumns(DEFAULT_COLUMNS)
+    }
+  }
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -388,6 +459,20 @@ export default function TemplateList({ boardId, sessionToken }) {
 
       const method = editingTemplateId ? 'PUT' : 'POST';
 
+      // Sanitize attachments: remove large Base64 data for files that already have a URL
+      const sanitizedAttachments = (formData.attachments || []).map(att => {
+        if (att.url) {
+          const { data, ...rest } = att;
+          return rest;
+        }
+        return att;
+      });
+
+      const payload = {
+        ...formData,
+        attachments: sanitizedAttachments
+      };
+
       const response = await fetch(
         url,
         {
@@ -397,7 +482,7 @@ export default function TemplateList({ boardId, sessionToken }) {
             'Authorization': `Bearer ${sessionToken}`,
             'ngrok-skip-browser-warning': '69420'
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(payload)
         }
       )
       if (response.ok) {
@@ -1704,7 +1789,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                     }}
                     onChange={(event, editor) => {
                       const data = editor.getData();
-                      setFormData({ ...formData, body: data });
+                      setFormData(prev => ({ ...prev, body: data }));
                     }}
                     config={{
                       licenseKey: 'GPL',
@@ -1808,64 +1893,89 @@ export default function TemplateList({ boardId, sessionToken }) {
                 </div>
 
                 <Flex style={{ flexWrap: 'wrap', gap: 8 }}>
-                  {['User Name', 'Board Name', 'Group Name', 'Item Name', 'Person', 'Name', 'Status', 'Date', 'Email', 'Text email', 'Contacts', 'Mirror-email', 'Mirror person', 'Mirror - text', 'Item ID'].map((chip) => {
-                    const varMap = {
-                      'User Name': 'user_name',
-                      'Board Name': 'board_name',
-                      'Group Name': 'group_name',
-                      'Item Name': 'item_name',
-                      'Person': 'assignee_name',
-                      'Name': 'name',
-                      'Status': 'status',
-                      'Date': 'due_date',
-                      'Email': 'email',
-                      'Text email': 'text_email',
-                      'Contacts': 'contacts',
-                      'Mirror-email': 'mirror_email',
-                      'Mirror person': 'mirror_person',
-                      'Mirror - text': 'mirror_text',
-                      'Item ID': 'item_id'
-                    };
-                    const varName = varMap[chip];
-                    return (
-                      <div
-                        key={chip}
-                        onClick={() => {
-                          if (editorRef.current) {
-                            editorRef.current.model.change(writer => {
-                              writer.insertText(`{{${varName}}}`, editorRef.current.model.document.selection.getFirstPosition());
-                            });
-                          } else {
-                            setFormData({ ...formData, body: formData.body + `{{${varName}}}` })
-                          }
-                        }}
-                        style={{
-                          padding: '6px 12px',
-                          border: '1px solid #E5E7EB',
-                          borderRadius: 4,
-                          fontSize: 13,
-                          color: '#6E7278',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          backgroundColor: '#fff',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.borderColor = '#0073ea';
-                          e.currentTarget.style.color = '#0073ea';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.borderColor = '#E5E7EB';
-                          e.currentTarget.style.color = '#6E7278';
-                        }}
-                      >
-                        {chip}
-                        {chip === 'Date' && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 4 }}><polyline points="6 9 12 15 18 9"></polyline></svg>}
-                      </div>
-                    )
-                  })}
+                  {/* System variables - always available */}
+                  {[
+                    { label: 'User Name', varName: 'user_name' },
+                    { label: 'Board Name', varName: 'board_name' },
+                    { label: 'Group Name', varName: 'group_name' },
+                    { label: 'Item Name', varName: 'item_name' },
+                    { label: 'Item ID', varName: 'item_id' },
+                  ].map((chip) => (
+                    <div
+                      key={chip.varName}
+                      onClick={() => {
+                        if (editorRef.current) {
+                          editorRef.current.model.change(writer => {
+                            writer.insertText(`{{${chip.varName}}}`, editorRef.current.model.document.selection.getFirstPosition());
+                          });
+                        } else {
+                          setFormData({ ...formData, body: formData.body + `{{${chip.varName}}}` })
+                        }
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        border: '1px solid #d0e8ff',
+                        borderRadius: 4,
+                        fontSize: 13,
+                        color: '#0073ea',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        backgroundColor: '#f0f7ff',
+                        transition: 'all 0.2s',
+                        fontWeight: 500
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = '#d0e8ff';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f0f7ff';
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" /></svg>
+                      {chip.label}
+                    </div>
+                  ))}
+
+                  {/* Board columns - fetched dynamically */}
+                  {boardColumns.map((col) => (
+                    <div
+                      key={col.id}
+                      onClick={() => {
+                        if (editorRef.current) {
+                          editorRef.current.model.change(writer => {
+                            writer.insertText(`{{${col.id}}}`, editorRef.current.model.document.selection.getFirstPosition());
+                          });
+                        } else {
+                          setFormData({ ...formData, body: formData.body + `{{${col.id}}}` })
+                        }
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: 4,
+                        fontSize: 13,
+                        color: '#6E7278',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        backgroundColor: '#fff',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.borderColor = '#0073ea';
+                        e.currentTarget.style.color = '#0073ea';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.borderColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6E7278';
+                      }}
+                    >
+                      {col.title}
+                    </div>
+                  ))}
                 </Flex>
               </Box>
 
@@ -1874,29 +1984,105 @@ export default function TemplateList({ boardId, sessionToken }) {
                   <Heading style={{ fontSize: 14, margin: 0, fontWeight: 500, color: '#323338' }}>File columns as attachments</Heading>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                 </Flex>
-                <div
-                  style={{
-                    padding: '6px 12px',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: 4,
-                    fontSize: 13,
-                    color: '#6E7278',
-                    cursor: 'pointer',
-                    display: 'inline-block',
-                    backgroundColor: '#fff',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.borderColor = '#0073ea';
-                    e.currentTarget.style.color = '#0073ea';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                    e.currentTarget.style.color = '#6E7278';
-                  }}
-                >
-                  Proposals
-                </div>
+                <Flex style={{ flexWrap: 'wrap', gap: 8 }}>
+                  {boardAssets.map((asset) => (
+                    <div
+                      key={asset.id}
+                      onClick={async (e) => {
+                        const target = e.currentTarget;
+                        const originalContent = target.innerHTML;
+
+                        console.log('Attaching file from board:', asset.name, asset.public_url);
+
+                        // 1. Pre-add to attachments list (Immediate UI feedback)
+                        const placeholderAtt = {
+                          id: asset.id,
+                          name: asset.name,
+                          size: asset.file_size || 0,
+                          type: asset.file_extension || 'file',
+                          url: asset.public_url,
+                          isDownloading: true
+                        };
+
+                        setFormData(prev => {
+                          const exists = prev.attachments?.some(a => a.id === asset.id);
+                          if (exists) return prev;
+                          return {
+                            ...prev,
+                            attachments: [...(prev.attachments || []), placeholderAtt]
+                          };
+                        });
+
+                        try {
+                          // 3. Show loading state on chip
+                          target.style.opacity = '0.5';
+                          target.innerHTML = `<span>⏳</span> ${asset.name}`;
+
+                          // 4. Fetch and convert to Base64 in background
+                          const response = await fetch(asset.public_url);
+                          if (!response.ok) throw new Error('Network response was not ok');
+                          const blob = await response.blob();
+
+                          const reader = new FileReader();
+                          const base64Data = await new Promise((resolve, reject) => {
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                          });
+
+                          // 5. Update the attachment with real data (Using functional update for safety)
+                          setFormData(prev => ({
+                            ...prev,
+                            attachments: (prev.attachments || []).map(a =>
+                              a.id === asset.id
+                                ? { ...a, data: base64Data, size: blob.size, isDownloading: false }
+                                : a
+                            )
+                          }));
+                        } catch (err) {
+                          console.error('CORS or Download error:', err);
+                          // Keep the link-based attachment if base64 conversion fails due to browser security
+                          setFormData(prev => ({
+                            ...prev,
+                            attachments: (prev.attachments || []).map(a =>
+                              a.id === asset.id ? { ...a, isDownloading: false, error: true } : a
+                            )
+                          }));
+                        } finally {
+                          target.style.opacity = '1';
+                          target.innerHTML = originalContent;
+                        }
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: 4,
+                        fontSize: 13,
+                        color: '#6E7278',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        backgroundColor: '#fff',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.borderColor = '#0073ea';
+                        e.currentTarget.style.color = '#0073ea';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.borderColor = '#E5E7EB';
+                        e.currentTarget.style.color = '#6E7278';
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                      {asset.name}
+                    </div>
+                  ))}
+                  {boardAssets.length === 0 && (
+                    <Text style={{ fontSize: 13, color: '#9699a6', fontStyle: 'italic' }}>No files found on board</Text>
+                  )}
+                </Flex>
               </Box>
             </Box>
           </Flex>
