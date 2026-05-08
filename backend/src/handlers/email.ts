@@ -121,6 +121,7 @@ async function sendEmail(
   // Get item data from Monday
   const itemData = await getMondayItem(env, boardId, itemId)
   const recipients = extractRecipients(itemData, integration.recipient_columns)
+  const ccRecipients = integration.cc_enabled ? recipients.slice(1) : []
 
   // Prepare email content
   const subject = replaceVariables(integration.subject, itemData)
@@ -132,9 +133,9 @@ async function sendEmail(
   for (const recipient of recipients) {
     try {
       if (board.email_provider === 'gmail') {
-        await sendGmail(env, boardId, recipient, subject, body, attachments)
+        await sendGmail(env, boardId, recipient, subject, body, attachments, ccRecipients)
       } else if (board.email_provider === 'outlook') {
-        await sendOutlook(env, boardId, recipient, subject, body, attachments)
+        await sendOutlook(env, boardId, recipient, subject, body, attachments, ccRecipients)
       }
 
       // Log success
@@ -292,7 +293,8 @@ async function sendGmail(
   recipient: string,
   subject: string,
   body: string,
-  attachments: any[]
+  attachments: any[],
+  ccRecipients: string[] = []
 ): Promise<void> {
   const board = await env.DB.prepare(
     'SELECT * FROM boards WHERE board_id = ?'
@@ -308,8 +310,10 @@ async function sendGmail(
   const accessToken = await refreshGmailToken(env, board)
 
   // Send email using Gmail API
+  const ccHeader = ccRecipients.length > 0 ? `Cc: ${ccRecipients.join(', ')}\r\n` : ''
   const email = [
     `To: ${recipient}`,
+    ccHeader,
     `Subject: ${subject}`,
     'Content-Type: text/html; charset=utf-8',
     '',
@@ -365,7 +369,8 @@ async function sendOutlook(
   recipient: string,
   subject: string,
   body: string,
-  attachments: any[]
+  attachments: any[],
+  ccRecipients: string[] = []
 ): Promise<void> {
   const board = await env.DB.prepare(
     'SELECT * FROM boards WHERE board_id = ?'
@@ -381,6 +386,7 @@ async function sendOutlook(
   const accessToken = await refreshOutlookToken(env, board)
 
   // Send email using Microsoft Graph API
+  const ccRecipientsList = ccRecipients.map(email => ({ emailAddress: { address: email } }))
   const email = {
     message: {
       subject,
@@ -394,7 +400,8 @@ async function sendOutlook(
             address: recipient
           }
         }
-      ]
+      ],
+      ...(ccRecipients.length > 0 && { ccRecipients: ccRecipientsList })
     }
   }
 

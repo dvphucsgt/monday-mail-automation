@@ -63,3 +63,16 @@
 .recipe-btn:hover {
   background-color: #005bb5;
 }
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4rem;
+  text-align: center;
+}
+
+.loading-state p {
+  color: #676879;
+  font-size: 1rem;
+}
