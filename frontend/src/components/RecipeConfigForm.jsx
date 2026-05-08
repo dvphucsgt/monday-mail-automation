@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Flex, Text, Label, Input, Select, Checkbox, Box } from '@vibe/core'
+import { Flex, Text, Label, Select, Checkbox, Box } from '@vibe/core'
 
 export default function RecipeConfigForm({ recipeType, templates, boardColumns, integration, onSubmit, onCancel }) {
   const [templateId, setTemplateId] = useState(integration?.template_id || '')
