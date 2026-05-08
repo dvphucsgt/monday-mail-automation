@@ -12,37 +12,37 @@ export default function IntegrationPage({ context }) {
     {
       id: 1,
       name: 'Status Change',
-      description: 'Gửi email khi giá trị của cột trạng thái thay đổi',
+      description: 'Send email when column status value changes',
       icon: '🔄'
     },
     {
       id: 2,
       name: 'Date Reached',
-      description: 'Gửi email khi đến ngày đáo hạn',
+      description: 'Send email when due date arrives',
       icon: '📅'
     },
     {
       id: 3,
       name: 'Person Assigned',
-      description: 'Gửi email khi item được gán cho người',
+      description: 'Send email when person is assigned to item',
       icon: '👤'
     },
     {
       id: 4,
       name: 'Item Created',
-      description: 'Gửi email khi item mới được tạo',
+      description: 'Send email when new item is created',
       icon: '➕'
     },
     {
       id: 5,
       name: 'Item Updated',
-      description: 'Gửi email khi item được cập nhật',
+      description: 'Send email when item is updated',
       icon: '✏️'
     },
     {
       id: 6,
       name: 'Button Click',
-      description: 'Gửi email khi button được click',
+      description: 'Send email when button is clicked',
       icon: '🔘'
     }
   ]
@@ -144,8 +144,8 @@ export default function IntegrationPage({ context }) {
   return (
     <div className="page-container integration-page">
       <div className="page-header">
-        <h2>⚡ Tích Hợp Tự Động</h2>
-        <p>Cấu hình quy trình tự động gửi email</p>
+        <h2>⚡ Automations</h2>
+        <p>Configure automatic email sending workflows</p>
       </div>
 
       {loading ? (
@@ -161,7 +161,7 @@ export default function IntegrationPage({ context }) {
                 <h3>{recipe.name}</h3>
                 <p>{recipe.description}</p>
               </div>
-              <button className="recipe-btn" onClick={() => handleConfigureRecipe(recipe.id === 1 ? 'status_change' : recipe.id === 2 ? 'date_reached' : recipe.id === 3 ? 'person_assigned' : recipe.id === 4 ? 'item_created' : recipe.id === 5 ? 'item_updated' : 'button_click')}>Cấu hình</button>
+              <button className="recipe-btn" onClick={() => handleConfigureRecipe(recipe.id === 1 ? 'status_change' : recipe.id === 2 ? 'date_reached' : recipe.id === 3 ? 'person_assigned' : recipe.id === 4 ? 'item_created' : recipe.id === 5 ? 'item_updated' : 'button_click')}>Configure</button>
             </div>
           ))}
         </div>
