@@ -4,6 +4,7 @@ import {
   successResponse,
   jsonResponse,
 } from "../utils/response";
+import { sendEmail } from "./email";
 
 export async function handleWebhook(
   request: Request,
@@ -25,15 +26,8 @@ export async function handleWebhook(
     const { boardId, itemId, columnId, value, type, pulseId } = event;
 
     // Handle different event types from Monday
-    let eventType = type;
-    if (type === "create_pulse") {
-      eventType = "create_pulse";
-    } else if (
-      type === "update_column_value" ||
-      type === "change_column_value"
-    ) {
-      eventType = "change_column_value";
-    }
+    const eventType = type; // Keep original type to avoid duplication logic errors
+
 
     // Find matching integrations
     const integrations = await env.DB.prepare(
@@ -54,42 +48,57 @@ export async function handleWebhook(
         columnId,
         value,
         pulseId,
+        event // Pass the full event object
       );
       console.log(
         `Integration ${integration.id} (type: ${integration.recipe_type}) trigger evaluation: ${shouldTrigger}`,
       );
 
       if (shouldTrigger) {
-        console.log(
-          `Triggering email for integration ${integration.id}, itemId: ${itemId || pulseId}`,
-        );
-        // Import and send email directly, waiting for it to finish
+        // 1. Strict Anti-duplication Check (Locking mechanism)
+        const recentLog = await env.DB.prepare(
+          `
+          SELECT id FROM email_logs 
+          WHERE integration_id = ? AND item_id = ? 
+          AND sent_at > datetime('now', '-30 seconds')
+          LIMIT 1
+        `,
+        )
+          .bind(integration.id, String(itemId || pulseId))
+          .first();
+
+        if (recentLog) {
+          console.log(`[Duplicate Block] Already processing/sent for Integration ${integration.id}, Item ${itemId || pulseId}`);
+          continue;
+        }
+
+        // 2. Create an immediate "processing" lock
+        await env.DB.prepare(
+          `
+          INSERT INTO email_logs (board_id, item_id, template_id, integration_id, recipient, status)
+          VALUES (?, ?, ?, ?, ?, 'processing')
+        `,
+        )
+          .bind(boardId, String(itemId || pulseId), integration.template_id, integration.id, "pending")
+          .run();
+
+        console.log(`[Webhook] Lock created. Triggering sendEmail workflow`);
+        // 3. Send email using the updated email handler
         try {
-          const { sendEmail } = await import("./email");
           const emailResponse = await sendEmail(
             env,
             integration.id,
-            itemId || pulseId,
+            String(itemId || pulseId),
             String(boardId),
           );
 
-          const failed = emailResponse.results.find(
-            (r: any) => r.status === "failed",
-          );
-          if (failed) {
-            console.error(
-              `Email failed for integration ${integration.id}: ${failed.error}`,
-            );
-          } else if (emailResponse.results.length > 0) {
-            console.log(
-              `Email sent successfully for integration ${integration.id}`,
-            );
+          if (emailResponse.results?.some((r: any) => r.status === "sent")) {
+            console.log(`[Webhook] Success: Email workflow completed for integration ${integration.id}`);
+          } else {
+            console.error(`[Webhook] Failed: Email workflow could not send email for integration ${integration.id}`);
           }
-        } catch (error) {
-          console.error(
-            `Error sending email for integration ${integration.id}:`,
-            error,
-          );
+        } catch (error: any) {
+          console.error(`[Webhook] Critical Error in Email workflow:`, error);
         }
       }
     }
@@ -107,47 +116,43 @@ function evaluateTrigger(
   columnId: string,
   value: any,
   pulseId?: string,
+  event?: any // Add full event for batch processing
 ): boolean {
   const { recipe_type, trigger_column, trigger_value } = integration;
 
-  switch (recipe_type) {
-    case "status_change":
-      return (
-        eventType === "change_column_value" &&
-        columnId === trigger_column &&
-        value?.label?.text === trigger_value
-      );
+  // Helper to check if a specific change matches our trigger
+  const isMatch = (cid: string, val: any) => {
+    switch (recipe_type) {
+      case "status_change":
+        return cid === trigger_column && val?.label?.text === trigger_value;
+      case "date_reached":
+        return cid === trigger_column && isToday(val?.date);
+      case "person_assigned":
+        return cid === trigger_column && val?.personsAndTeams?.length > 0;
+      case "button_click":
+        return cid === trigger_column && val?.pressed === true;
+      default:
+        return false;
+    }
+  };
 
-    case "date_reached":
-      return (
-        eventType === "change_column_value" &&
-        columnId === trigger_column &&
-        isToday(value?.date)
-      );
-
-    case "person_assigned":
-      return (
-        eventType === "change_column_value" &&
-        columnId === trigger_column &&
-        value?.personsAndTeams?.length > 0
-      );
-
-    case "item_created":
-      return eventType === "create_pulse";
-
-    case "item_updated":
-      return eventType === "update_column_value";
-
-    case "button_click":
-      return (
-        eventType === "change_column_value" &&
-        columnId === trigger_column &&
-        value?.pressed === true
-      );
-
-    default:
-      return false;
+  if (eventType === "change_column_value" || eventType === "update_column_value") {
+    return isMatch(columnId, value);
   }
+
+  if (eventType === "batch_change_column_value" && event?.column_values) {
+    // Check if any of the changed columns in the batch match our trigger
+    // In batch, column_values is often an object with column IDs as keys
+    for (const [cid, val] of Object.entries(event.column_values)) {
+      if (isMatch(cid, val)) return true;
+    }
+  }
+
+  if (recipe_type === "item_created" && eventType === "create_pulse") {
+    return true;
+  }
+
+  return false;
 }
 
 function isToday(dateString: string): boolean {

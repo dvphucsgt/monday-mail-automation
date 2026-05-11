@@ -69,9 +69,9 @@ export async function handleIntegrations(
       `
       INSERT INTO integrations (
         board_id, template_id, recipe_type, trigger_column,
-        trigger_value, recipient_columns, cc_enabled
+        trigger_value, recipient_columns, cc_enabled, user_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
     )
       .bind(
@@ -82,6 +82,7 @@ export async function handleIntegrations(
         trigger_value || null,
         JSON.stringify(recipient_columns),
         cc_enabled ? 1 : 0,
+        String(jwtPayload.userId)
       )
       .run();
 
@@ -145,7 +146,7 @@ export async function handleIntegrations(
       UPDATE integrations
       SET template_id = ?, recipe_type = ?, trigger_column = ?,
           trigger_value = ?, recipient_columns = ?, cc_enabled = ?,
-          updated_at = CURRENT_TIMESTAMP
+          user_id = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `,
     )
@@ -156,6 +157,7 @@ export async function handleIntegrations(
         trigger_value || existing.trigger_value,
         JSON.stringify(recipient_columns || []),
         cc_enabled ? 1 : 0,
+        String(jwtPayload.userId),
         integrationId,
       )
       .run();

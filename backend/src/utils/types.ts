@@ -43,6 +43,7 @@ export interface Integration {
   trigger_value?: string;
   recipient_columns: string;
   cc_enabled: number;
+  user_id?: string;
   created_at: string;
   updated_at?: string;
 }

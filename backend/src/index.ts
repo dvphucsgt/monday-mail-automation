@@ -1,5 +1,10 @@
+import { handleAuth } from "./handlers/auth";
+import { handleTemplates } from "./handlers/templates";
+import { handleIntegrations } from "./handlers/integrations";
+import { handleEmail } from "./handlers/email";
+import { handleWebhook } from "./handlers/webhook";
+import { jsonResponse } from "./utils/response";
 import type { Env } from "./utils/types";
-import { errorResponse, jsonResponse } from "./utils/response";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -21,37 +26,30 @@ export default {
     }
 
     try {
-      // Auth routes
-      if (path.startsWith("/auth/")) {
-        const { handleAuth } = await import("./handlers/auth");
-        return withCors(await handleAuth(request, env, url), corsHeaders);
+      // API Routes - Explicitly check paths
+      if (path.startsWith("/auth")) {
+        const response = await handleAuth(request, env, url);
+        return withCors(response, corsHeaders);
       }
 
-      // Template routes
       if (path.startsWith("/templates")) {
-        const { handleTemplates } = await import("./handlers/templates");
-        return withCors(await handleTemplates(request, env, url), corsHeaders);
+        const response = await handleTemplates(request, env, url);
+        return withCors(response, corsHeaders);
       }
 
-      // Integration routes
       if (path.startsWith("/integrations")) {
-        const { handleIntegrations } = await import("./handlers/integrations");
-        return withCors(
-          await handleIntegrations(request, env, url),
-          corsHeaders,
-        );
+        const response = await handleIntegrations(request, env, url);
+        return withCors(response, corsHeaders);
       }
 
-      // Email routes
-      if (path.startsWith("/email/")) {
-        const { handleEmail } = await import("./handlers/email");
-        return withCors(await handleEmail(request, env, url), corsHeaders);
+      if (path.startsWith("/email")) {
+        const response = await handleEmail(request, env, url);
+        return withCors(response, corsHeaders);
       }
 
-      // Webhook route
       if (path === "/webhook") {
-        const { handleWebhook } = await import("./handlers/webhook");
-        return withCors(await handleWebhook(request, env), corsHeaders);
+        const response = await handleWebhook(request, env);
+        return withCors(response, corsHeaders);
       }
 
       // Health check
@@ -65,13 +63,11 @@ export default {
       }
 
       // Proxy everything else to frontend (Vite dev server on port 8301)
-      // This allows using a single tunnel for both frontend and backend
       const frontendUrl = new URL(request.url);
       frontendUrl.protocol = "http:";
       frontendUrl.host = "localhost:8301";
 
       const proxyHeaders = new Headers(request.headers);
-      // Crucial: Delete Host header to let Vite handle it
       proxyHeaders.delete("Host");
 
       try {
@@ -85,9 +81,7 @@ export default {
           redirect: "manual",
         });
 
-        // Create a new response with the frontend body
         const responseHeaders = new Headers(frontendResponse.headers);
-        // Ensure CORS headers are present
         Object.entries(corsHeaders).forEach(([key, value]) => {
           responseHeaders.set(key, value);
         });
@@ -122,6 +116,12 @@ export function withCors(response: Response, corsHeaders: any) {
   Object.entries(corsHeaders).forEach(([key, value]) => {
     newResponse.headers.set(key, value);
   });
+
+  // Force JSON content type for API responses if not set
+  if (!newResponse.headers.has("Content-Type")) {
+    newResponse.headers.set("Content-Type", "application/json");
+  }
+
   return newResponse;
 }
 
