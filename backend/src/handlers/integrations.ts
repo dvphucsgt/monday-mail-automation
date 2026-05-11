@@ -1,75 +1,79 @@
-import type { Env, Integration } from '../utils/types'
-import { errorResponse, successResponse } from '../utils/response'
-import { ValidationError, NotFoundError } from '../utils/errors'
-import { verifyAuth } from '../utils/auth'
+import type { Env, Integration } from "../utils/types";
+import { errorResponse, successResponse } from "../utils/response";
+import { ValidationError, NotFoundError } from "../utils/errors";
+import { verifyAuth } from "../utils/auth";
 
 export async function handleIntegrations(
   request: Request,
   env: Env,
-  url: URL
+  url: URL,
 ): Promise<Response> {
-  const path = url.pathname
+  const path = url.pathname;
 
   // Verify auth for all integration routes
-  const auth = verifyAuth(request, env, url)
+  const auth = verifyAuth(request, env, url);
   if (!auth.isValid) {
-    return errorResponse(new Error(auth.error), auth.status || 401)
+    return errorResponse(new Error(auth.error), auth.status || 401);
   }
-  const jwtPayload = auth.payload
+  const jwtPayload = auth.payload;
 
   // GET /integrations?board_id=xxx
-  if (path === '/integrations' && request.method === 'GET') {
-    const boardId = url.searchParams.get('board_id')
+  if (path === "/integrations" && request.method === "GET") {
+    const boardId = url.searchParams.get("board_id");
     if (!boardId) {
-      return errorResponse(new ValidationError('board_id is required'), 400)
+      return errorResponse(new ValidationError("board_id is required"), 400);
     }
 
-    const integrations = await env.DB.prepare(`
+    const integrations = await env.DB.prepare(
+      `
       SELECT i.*, t.name as template_name
       FROM integrations i
       LEFT JOIN templates t ON i.template_id = t.id
       WHERE i.board_id = ?
       ORDER BY i.created_at DESC
-    `)
+    `,
+    )
       .bind(boardId)
-      .all()
+      .all();
 
-    return successResponse({ integrations: integrations.results })
+    return successResponse({ integrations: integrations.results });
   }
 
   // POST /integrations?board_id=xxx
-  if (path === '/integrations' && request.method === 'POST') {
-    const boardId = url.searchParams.get('board_id')
+  if (path === "/integrations" && request.method === "POST") {
+    const boardId = url.searchParams.get("board_id");
     if (!boardId) {
-      return errorResponse(new ValidationError('board_id is required'), 400)
+      return errorResponse(new ValidationError("board_id is required"), 400);
     }
 
-    const body = await request.json()
+    const body = await request.json();
     const {
       template_id,
       recipe_type,
       trigger_column,
       trigger_value,
       recipient_columns,
-      cc_enabled
-    } = body
+      cc_enabled,
+    } = body;
 
     if (!template_id || !recipe_type || !recipient_columns) {
       return errorResponse(
         new ValidationError(
-          'template_id, recipe_type, and recipient_columns are required'
+          "template_id, recipe_type, and recipient_columns are required",
         ),
-        400
-      )
+        400,
+      );
     }
 
-    const result = await env.DB.prepare(`
+    const result = await env.DB.prepare(
+      `
       INSERT INTO integrations (
         board_id, template_id, recipe_type, trigger_column,
         trigger_value, recipient_columns, cc_enabled
       )
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `)
+    `,
+    )
       .bind(
         boardId,
         template_id,
@@ -77,64 +81,74 @@ export async function handleIntegrations(
         trigger_column || null,
         trigger_value || null,
         JSON.stringify(recipient_columns),
-        cc_enabled ? 1 : 0
+        cc_enabled ? 1 : 0,
       )
-      .run()
+      .run();
 
     // Create webhook
-    const webhookId = await createMondayWebhook(env, boardId, result.meta.last_row_id, recipe_type)
+    const webhookId = await createMondayWebhook(
+      env,
+      boardId,
+      result.meta.last_row_id,
+      recipe_type,
+      trigger_column,
+    );
 
     if (webhookId) {
-      await env.DB.prepare(`
+      await env.DB.prepare(
+        `
         INSERT INTO webhooks (board_id, webhook_id, integration_id)
         VALUES (?, ?, ?)
-      `)
+      `,
+      )
         .bind(boardId, webhookId, result.meta.last_row_id)
-        .run()
+        .run();
     }
 
-    const integration = await env.DB.prepare(
-      'SELECT * FROM integrations WHERE id = ?'
+    const integration = (await env.DB.prepare(
+      "SELECT * FROM integrations WHERE id = ?",
     )
       .bind(result.meta.last_row_id)
-      .first() as Integration
+      .first()) as Integration;
 
     return successResponse(
       { integration, webhook_id: webhookId },
-      'Integration created successfully'
-    )
+      "Integration created successfully",
+    );
   }
 
   // PUT /integrations/:id
-  if (path.startsWith('/integrations/') && request.method === 'PUT') {
-    const integrationId = parseInt(path.split('/').pop()!)
-    const body = await request.json()
+  if (path.startsWith("/integrations/") && request.method === "PUT") {
+    const integrationId = parseInt(path.split("/").pop()!);
+    const body = await request.json();
     const {
       template_id,
       recipe_type,
       trigger_column,
       trigger_value,
       recipient_columns,
-      cc_enabled
-    } = body
+      cc_enabled,
+    } = body;
 
     const existing = await env.DB.prepare(
-      'SELECT * FROM integrations WHERE id = ?'
+      "SELECT * FROM integrations WHERE id = ?",
     )
       .bind(integrationId)
-      .first()
+      .first();
 
     if (!existing) {
-      return errorResponse(new NotFoundError('Integration not found'), 404)
+      return errorResponse(new NotFoundError("Integration not found"), 404);
     }
 
-    await env.DB.prepare(`
+    await env.DB.prepare(
+      `
       UPDATE integrations
       SET template_id = ?, recipe_type = ?, trigger_column = ?,
           trigger_value = ?, recipient_columns = ?, cc_enabled = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `)
+    `,
+    )
       .bind(
         template_id || existing.template_id,
         recipe_type || existing.recipe_type,
@@ -142,106 +156,115 @@ export async function handleIntegrations(
         trigger_value || existing.trigger_value,
         JSON.stringify(recipient_columns || []),
         cc_enabled ? 1 : 0,
-        integrationId
+        integrationId,
       )
-      .run()
+      .run();
 
-    const integration = await env.DB.prepare(
-      'SELECT * FROM integrations WHERE id = ?'
+    const integration = (await env.DB.prepare(
+      "SELECT * FROM integrations WHERE id = ?",
     )
       .bind(integrationId)
-      .first() as Integration
+      .first()) as Integration;
 
-    return successResponse({ integration }, 'Integration updated successfully')
+    return successResponse({ integration }, "Integration updated successfully");
   }
 
   // DELETE /integrations/:id
-  if (path.startsWith('/integrations/') && request.method === 'DELETE') {
-    const integrationId = parseInt(path.split('/').pop()!)
+  if (path.startsWith("/integrations/") && request.method === "DELETE") {
+    const integrationId = parseInt(path.split("/").pop()!);
 
     const existing = await env.DB.prepare(
-      'SELECT * FROM integrations WHERE id = ?'
+      "SELECT * FROM integrations WHERE id = ?",
     )
       .bind(integrationId)
-      .first()
+      .first();
 
     if (!existing) {
-      return errorResponse(new NotFoundError('Integration not found'), 404)
+      return errorResponse(new NotFoundError("Integration not found"), 404);
     }
 
     // Delete webhooks
     const webhooks = await env.DB.prepare(
-      'SELECT webhook_id FROM webhooks WHERE integration_id = ?'
+      "SELECT webhook_id FROM webhooks WHERE integration_id = ?",
     )
       .bind(integrationId)
-      .all()
+      .all();
 
     for (const webhook of webhooks.results) {
-      await deleteMondayWebhook(env, webhook.webhook_id)
+      await deleteMondayWebhook(env, webhook.webhook_id);
     }
 
-    await env.DB.prepare('DELETE FROM integrations WHERE id = ?')
+    await env.DB.prepare("DELETE FROM integrations WHERE id = ?")
       .bind(integrationId)
-      .run()
+      .run();
 
     return successResponse(
       { success: true },
-      'Integration deleted successfully'
-    )
+      "Integration deleted successfully",
+    );
   }
 
-  return errorResponse(new Error('Not found'), 404)
+  return errorResponse(new Error("Not found"), 404);
 }
 
 async function createMondayWebhook(
   env: Env,
   boardId: string,
   integrationId: number,
-  recipeType: string
+  recipeType: string,
+  triggerColumn?: string,
 ): Promise<string | null> {
   try {
-    const webhookUrl = `${env.MONDAY_WEBHOOK_URL || 'https://your-worker.workers.dev'}/webhook`
+    const baseUrl = env.MONDAY_WEBHOOK_URL;
+    const webhookUrl = `${baseUrl.replace(/\/$/, "")}/webhook`;
 
     // Map recipe types to Monday webhook events
-    const eventMap: Record<string, string> = {
-      status_change: 'change_column_value',
-      date_reached: 'change_column_value',
-      person_assigned: 'change_column_value',
-      button_click: 'change_column_value',
-      item_created: 'create_pulse',
-      item_updated: 'update_column_value'
-    }
+    let eventType = "change_column_value";
+    let config = "";
 
-    const eventType = eventMap[recipeType] || 'change_column_value'
+    if (recipeType === "status_change" && triggerColumn) {
+      eventType = "change_specific_column_value";
+      config = `config: "{\\"columnId\\": \\"${triggerColumn}\\"}"`;
+    } else if (recipeType === "item_created") {
+      eventType = "create_pulse";
+    } else if (recipeType === "item_updated") {
+      eventType = "update_column_value";
+    }
 
     const mutation = `
       mutation {
         create_webhook(
-          board_id: ${boardId}
-          url: "${webhookUrl}"
-          event: ${eventType}
-          config: "{\\"columnIds\\": [\\"all\\"]}"
+          board_id: ${boardId},
+          url: "${webhookUrl}",
+          event: ${eventType}${config ? `, ${config}` : ""}
         ) {
           id
           board_id
         }
       }
-    `
+    `;
 
-    const response = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
+    console.log("Creating Monday webhook with mutation:", mutation);
+
+    const response = await fetch("https://api.monday.com/v2", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.MONDAY_API_KEY}`
+        "Content-Type": "application/json",
+        Authorization: env.MONDAY_API_KEY,
       },
-      body: JSON.stringify({ query: mutation })
-    })
+      body: JSON.stringify({ query: mutation }),
+    });
 
-    const data = await response.json()
-    return data.data?.create_webhook?.id || null
+    const data = await response.json();
+
+    if (data.errors) {
+      console.error("Monday API errors:", JSON.stringify(data.errors, null, 2));
+    }
+
+    return data.data?.create_webhook?.id || null;
   } catch (error) {
-    console.error('Error creating webhook:', error)
-    return null
+    console.error("Error creating webhook:", error);
+    return null;
   }
 }
 
@@ -253,17 +276,17 @@ async function deleteMondayWebhook(env: Env, webhookId: string): Promise<void> {
           id
         }
       }
-    `
+    `;
 
-    await fetch('https://api.monday.com/v2', {
-      method: 'POST',
+    await fetch("https://api.monday.com/v2", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.MONDAY_API_KEY}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.MONDAY_API_KEY}`,
       },
-      body: JSON.stringify({ query: mutation })
-    })
+      body: JSON.stringify({ query: mutation }),
+    });
   } catch (error) {
-    console.error('Error deleting webhook:', error)
+    console.error("Error deleting webhook:", error);
   }
 }

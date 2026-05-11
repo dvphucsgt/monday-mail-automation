@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS templates (
   body TEXT NOT NULL,
   attachments TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (board_id) REFERENCES boards(board_id) ON DELETE CASCADE
 );
 
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS integrations (
   recipient_columns TEXT,
   cc_enabled INTEGER DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (board_id) REFERENCES boards(board_id) ON DELETE CASCADE,
   FOREIGN KEY (template_id) REFERENCES templates(id) ON DELETE CASCADE
 );

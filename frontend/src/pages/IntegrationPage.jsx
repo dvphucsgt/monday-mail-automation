@@ -5,7 +5,9 @@ import backendAPI from '../api/backend'
 import IntegrationModal from '../components/IntegrationModal'
 import './IntegrationPage.css'
 
-export default function IntegrationPage({ context }) {
+const monday = mondaySdk()
+
+export default function IntegrationPage({ context, sessionToken }) {
   const { boardId } = context || {}
 
   const integrationRecipes = [
@@ -56,29 +58,40 @@ export default function IntegrationPage({ context }) {
   const [editingIntegration, setEditingIntegration] = useState(null)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (sessionToken) {
+      loadData()
+    }
+  }, [sessionToken])
 
   async function loadData() {
     try {
       setLoading(true)
-      const contextData = await mondaySdk.get('context')
+      const contextData = await monday.get('context')
       const boardId = contextData.data.boardId
 
       // Fetch integrations
-      const integrationsData = await backendAPI.getIntegrations(boardId)
-      setIntegrations(integrationsData.integrations)
+      const integrationsData = await backendAPI.getIntegrations(boardId, sessionToken)
+      setIntegrations(integrationsData.data?.integrations || [])
 
       // Fetch templates
-      const templatesData = await backendAPI.getTemplates(boardId)
-      setTemplates(templatesData.templates)
+      const templatesData = await backendAPI.getTemplates(boardId, sessionToken)
+      setTemplates(templatesData.data?.templates || [])
 
       // Fetch board columns from Monday
-      const columnsData = await mondaySdk.api(`query { boards(ids: [${boardId}]) { columns { id title type settings_str } } }`)
-      const columns = columnsData.data.boards[0].columns.map(col => ({
-        ...col,
-        settings_labels: col.settings_str ? JSON.parse(col.settings_str).labels : []
-      }))
+      const columnsData = await monday.api(`query { boards(ids: [${boardId}]) { columns { id title type settings_str } } }`)
+      const columns = columnsData.data.boards[0].columns.map(col => {
+        let labels = []
+        if (col.settings_str) {
+          const settings = JSON.parse(col.settings_str)
+          if (settings.labels) {
+            labels = Object.values(settings.labels)
+          }
+        }
+        return {
+          ...col,
+          settings_labels: labels
+        }
+      })
       setBoardColumns(columns)
 
       setLoading(false)
@@ -102,24 +115,24 @@ export default function IntegrationPage({ context }) {
 
   async function handleIntegrationSubmit(formData) {
     try {
-      const contextData = await mondaySdk.get('context')
+      const contextData = await monday.get('context')
       const boardId = contextData.data.boardId
 
       if (editingIntegration) {
-        await backendAPI.updateIntegration(editingIntegration.id, formData)
+        await backendAPI.updateIntegration(editingIntegration.id, formData, sessionToken)
       } else {
-        await backendAPI.createIntegration(boardId, formData)
+        await backendAPI.createIntegration(boardId, formData, sessionToken)
       }
 
       await loadData()
       setShowModal(false)
-      mondayApi.executeCommand('showNotification', {
+      monday.execute('showNotification', {
         text: editingIntegration ? 'Integration updated' : 'Integration created',
         type: 'success'
       })
     } catch (error) {
       console.error('Failed to save integration:', error)
-      mondayApi.executeCommand('showNotification', {
+      monday.execute('showNotification', {
         text: 'Failed to save integration',
         type: 'error'
       })
@@ -130,9 +143,9 @@ export default function IntegrationPage({ context }) {
     if (!confirm('Are you sure you want to delete this integration?')) return
 
     try {
-      await backendAPI.deleteIntegration(integrationId)
+      await backendAPI.deleteIntegration(integrationId, sessionToken)
       await loadData()
-      mondayApi.executeCommand('showNotification', {
+      monday.execute('showNotification', {
         text: 'Integration deleted',
         type: 'success'
       })
@@ -150,21 +163,61 @@ export default function IntegrationPage({ context }) {
 
       {loading ? (
         <div className="loading-state">
-          <p>Loading integrations...</p>
+          <p>Loading automations...</p>
         </div>
       ) : (
-        <div className="integration-recipes">
-          {integrationRecipes.map((recipe) => (
-            <div key={recipe.id} className="recipe-card">
-              <div className="recipe-icon">{recipe.icon}</div>
-              <div className="recipe-content">
-                <h3>{recipe.name}</h3>
-                <p>{recipe.description}</p>
+        <>
+          <div className="integration-recipes">
+            {integrationRecipes.map((recipe) => (
+              <div key={recipe.id} className="recipe-card">
+                <div className="recipe-icon">{recipe.icon}</div>
+                <div className="recipe-content">
+                  <h3>{recipe.name}</h3>
+                  <p>{recipe.description}</p>
+                </div>
+                <button className="recipe-btn" onClick={() => handleConfigureRecipe(recipe.id === 1 ? 'status_change' : recipe.id === 2 ? 'date_reached' : recipe.id === 3 ? 'person_assigned' : recipe.id === 4 ? 'item_created' : recipe.id === 5 ? 'item_updated' : 'button_click')}>Configure</button>
               </div>
-              <button className="recipe-btn" onClick={() => handleConfigureRecipe(recipe.id === 1 ? 'status_change' : recipe.id === 2 ? 'date_reached' : recipe.id === 3 ? 'person_assigned' : recipe.id === 4 ? 'item_created' : recipe.id === 5 ? 'item_updated' : 'button_click')}>Configure</button>
+            ))}
+          </div>
+
+          {integrations && integrations.length > 0 && (
+            <div className="active-integrations-section">
+              <div className="page-header" style={{ marginTop: '48px' }}>
+                <h2>✅ Active Automations</h2>
+                <p>Manage your existing email workflows</p>
+              </div>
+              <div className="active-integrations-list">
+                {integrations.map((integration) => (
+                  <div key={integration.id} className="active-integration-item">
+                    <div className="integration-info">
+                      <div className="integration-type-badge">
+                        {integrationRecipes.find(r =>
+                          (r.id === 1 && integration.recipe_type === 'status_change') ||
+                          (r.id === 2 && integration.recipe_type === 'date_reached') ||
+                          (r.id === 3 && integration.recipe_type === 'person_assigned') ||
+                          (r.id === 4 && integration.recipe_type === 'item_created') ||
+                          (r.id === 5 && integration.recipe_type === 'item_updated') ||
+                          (r.id === 6 && integration.recipe_type === 'button_click')
+                        )?.icon || '⚡'}
+                      </div>
+                      <div className="integration-details">
+                        <h3>{integration.template_name || 'Email Automation'}</h3>
+                        <p>
+                          Type: <strong>{integration.recipe_type.replace('_', ' ')}</strong>
+                          {integration.trigger_column && ` • Column: ${integration.trigger_column}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="integration-actions">
+                      <button className="btn-edit" onClick={() => handleEditIntegration(integration)}>Edit</button>
+                      <button className="btn-delete" onClick={() => handleDeleteIntegration(integration.id)}>Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {showModal && (

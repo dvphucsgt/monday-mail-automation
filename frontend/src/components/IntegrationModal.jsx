@@ -1,4 +1,5 @@
-import { Modal } from '@vibe/core'
+import { Modal, ModalHeader, ModalContent, ModalFooter } from '@vibe/core'
+import { Flex } from '@vibe/layout'
 import RecipeConfigForm from './RecipeConfigForm'
 
 const Button = ({ children, kind = 'primary', size = 'medium', onClick, style = {}, ...props }) => {
@@ -47,7 +48,7 @@ export default function IntegrationModal({ isOpen, onClose, recipeType, template
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="large">
+    <Modal show={isOpen} onClose={onClose} size="large">
       <ModalHeader title={getRecipeTitle(recipeType)} />
       <ModalContent>
         <RecipeConfigForm
@@ -60,8 +61,10 @@ export default function IntegrationModal({ isOpen, onClose, recipeType, template
         />
       </ModalContent>
       <ModalFooter>
-        <Button kind="secondary" onClick={onClose}>Cancel</Button>
-        <Button kind="primary" type="submit">Save</Button>
+        <Flex justify="end" gap={16} style={{ width: '100%' }}>
+          <Button kind="secondary" onClick={onClose} style={{ minWidth: '100px' }}>Cancel</Button>
+          <Button kind="primary" type="submit" form="recipe-config-form" style={{ minWidth: '120px', boxShadow: '0 4px 12px rgba(0, 115, 234, 0.3)' }}>Save Integration</Button>
+        </Flex>
       </ModalFooter>
     </Modal>
   )

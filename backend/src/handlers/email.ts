@@ -1,238 +1,308 @@
-import type { Env, EmailLog } from '../utils/types'
-import { errorResponse, successResponse } from '../utils/response'
-import { ValidationError, EmailError } from '../utils/errors'
+import type { Env, EmailLog } from "../utils/types";
+import { errorResponse, successResponse } from "../utils/response";
+import { ValidationError, EmailError } from "../utils/errors";
+import CryptoJS from "crypto-js";
 
+function encryptToken(token: string, key: string) {
+  return CryptoJS.AES.encrypt(token, key).toString();
+}
+
+function decryptToken(encrypted: string, key: string) {
+  const bytes = CryptoJS.AES.decrypt(encrypted, key);
+  return bytes.toString(CryptoJS.enc.Utf8);
+}
 export async function handleEmail(
   request: Request,
   env: Env,
-  url: URL
+  url: URL,
 ): Promise<Response> {
-  const path = url.pathname
+  const path = url.pathname;
 
   // GET /email/logs?board_id=xxx&limit=50
-  if (path === '/email/logs' && request.method === 'GET') {
-    const boardId = url.searchParams.get('board_id')
-    const limit = parseInt(url.searchParams.get('limit') || '50')
+  if (path === "/email/logs" && request.method === "GET") {
+    const boardId = url.searchParams.get("board_id");
+    const limit = parseInt(url.searchParams.get("limit") || "50");
 
     if (!boardId) {
-      return errorResponse(new ValidationError('board_id is required'), 400)
+      return errorResponse(new ValidationError("board_id is required"), 400);
     }
 
-    const logs = await env.DB.prepare(`
+    const logs = await env.DB.prepare(
+      `
       SELECT el.*, t.name as template_name
       FROM email_logs el
       LEFT JOIN templates t ON el.template_id = t.id
       WHERE el.board_id = ?
       ORDER BY el.sent_at DESC
       LIMIT ?
-    `)
+    `,
+    )
       .bind(boardId, limit)
-      .all()
+      .all();
 
-    return successResponse({ logs: logs.results })
+    return successResponse({ logs: logs.results });
   }
 
   // POST /email/send
-  if (path === '/email/send' && request.method === 'POST') {
-    const body = await request.json()
-    const { integration_id, item_id, board_id } = body
+  if (path === "/email/send" && request.method === "POST") {
+    const body = await request.json();
+    const { integration_id, item_id, board_id } = body;
 
     if (!integration_id || !item_id || !board_id) {
       return errorResponse(
-        new ValidationError('integration_id, item_id, and board_id are required'),
-        400
-      )
+        new ValidationError(
+          "integration_id, item_id, and board_id are required",
+        ),
+        400,
+      );
     }
 
     try {
-      const result = await sendEmail(env, integration_id, item_id, board_id)
-      return successResponse(result, 'Email sent successfully')
+      const result = await sendEmail(env, integration_id, item_id, board_id);
+      return successResponse(result, "Email sent successfully");
     } catch (error: any) {
-      return errorResponse(error, error.statusCode || 500)
+      return errorResponse(error, error.statusCode || 500);
     }
   }
 
   // POST /email/test
-  if (path === '/email/test' && request.method === 'POST') {
-    const body = await request.json()
-    const { board_id, template_id, recipient } = body
+  if (path === "/email/test" && request.method === "POST") {
+    const body = await request.json();
+    const { board_id, template_id, recipient } = body;
 
     if (!board_id || !template_id || !recipient) {
       return errorResponse(
-        new ValidationError('board_id, template_id, and recipient are required'),
-        400
-      )
+        new ValidationError(
+          "board_id, template_id, and recipient are required",
+        ),
+        400,
+      );
     }
 
     try {
-      const template = await env.DB.prepare(
-        'SELECT * FROM templates WHERE id = ?'
+      const template = (await env.DB.prepare(
+        "SELECT * FROM templates WHERE id = ?",
       )
         .bind(template_id)
-        .first() as any
+        .first()) as any;
 
       if (!template) {
-        throw new Error('Template not found')
+        throw new Error("Template not found");
       }
 
-      await sendGmail(env, board_id, recipient, template.subject, template.body, [])
-      await sendOutlook(env, board_id, recipient, template.subject, template.body, [])
+      await sendGmail(
+        env,
+        board_id,
+        recipient,
+        template.subject,
+        template.body,
+        [],
+      );
+      await sendOutlook(
+        env,
+        board_id,
+        recipient,
+        template.subject,
+        template.body,
+        [],
+      );
 
-      return successResponse({ success: true }, 'Test email sent successfully')
+      return successResponse({ success: true }, "Test email sent successfully");
     } catch (error: any) {
-      return errorResponse(error, 500)
+      return errorResponse(error, 500);
     }
   }
 
-  return errorResponse(new Error('Not found'), 404)
+  return errorResponse(new Error("Not found"), 404);
 }
 
-async function sendEmail(
+export async function sendEmail(
   env: Env,
   integrationId: number,
   itemId: string,
-  boardId: string
+  boardId: string,
 ): Promise<any> {
   // Get integration
-  const integration = await env.DB.prepare(`
+  const integration = (await env.DB.prepare(
+    `
     SELECT i.*, t.subject, t.body, t.attachments
     FROM integrations i
     LEFT JOIN templates t ON i.template_id = t.id
     WHERE i.id = ?
-  `)
+  `,
+  )
     .bind(integrationId)
-    .first() as any
+    .first()) as any;
 
   if (!integration) {
-    throw new Error('Integration not found')
+    throw new Error("Integration not found");
   }
 
   // Get board config
-  const board = await env.DB.prepare(
-    'SELECT * FROM boards WHERE board_id = ?'
-  )
+  const board = (await env.DB.prepare("SELECT * FROM boards WHERE board_id = ?")
     .bind(boardId)
-    .first() as any
+    .first()) as any;
 
   if (!board) {
-    throw new Error('Board not configured')
+    throw new Error("Board not configured");
   }
 
   // Get item data from Monday
-  const itemData = await getMondayItem(env, boardId, itemId)
-  const recipients = extractRecipients(itemData, integration.recipient_columns)
-  const ccRecipients = integration.cc_enabled ? recipients.slice(1) : []
+  const itemData = await getMondayItem(env, boardId, itemId);
+  const recipients = extractRecipients(itemData, integration.recipient_columns);
+  console.log("Extracted recipients:", recipients);
+
+  const ccRecipients = integration.cc_enabled ? recipients.slice(1) : [];
+
+  if (recipients.length === 0) {
+    console.log("No recipients found, skipping email send.");
+    return { results: [] };
+  }
 
   // Prepare email content
-  const subject = replaceVariables(integration.subject, itemData)
-  const body = replaceVariables(integration.body, itemData)
-  const attachments = await prepareAttachments(env, integration.attachments, itemData)
+  const subject = replaceVariables(integration.subject, itemData);
+  const body = replaceVariables(integration.body, itemData);
+  const attachments = await prepareAttachments(
+    env,
+    integration.attachments,
+    itemData,
+  );
 
   // Send email
-  const results = []
+  const results = [];
   for (const recipient of recipients) {
     try {
-      if (board.email_provider === 'gmail') {
-        await sendGmail(env, boardId, recipient, subject, body, attachments, ccRecipients)
-      } else if (board.email_provider === 'outlook') {
-        await sendOutlook(env, boardId, recipient, subject, body, attachments, ccRecipients)
+      if (board.email_provider === "gmail") {
+        await sendGmail(
+          env,
+          boardId,
+          recipient,
+          subject,
+          body,
+          attachments,
+          ccRecipients,
+        );
+      } else if (board.email_provider === "outlook") {
+        await sendOutlook(
+          env,
+          boardId,
+          recipient,
+          subject,
+          body,
+          attachments,
+          ccRecipients,
+        );
       }
 
       // Log success
-      await env.DB.prepare(`
+      await env.DB.prepare(
+        `
         INSERT INTO email_logs (board_id, item_id, template_id, recipient, status)
         VALUES (?, ?, ?, ?, 'sent')
-      `)
+      `,
+      )
         .bind(boardId, itemId, integration.template_id, recipient)
-        .run()
+        .run();
 
-      results.push({ recipient, status: 'sent' })
+      results.push({ recipient, status: "sent" });
     } catch (error: any) {
       // Log error
-      await env.DB.prepare(`
+      await env.DB.prepare(
+        `
         INSERT INTO email_logs (board_id, item_id, template_id, recipient, status, error)
         VALUES (?, ?, ?, ?, 'failed', ?)
-      `)
-        .bind(boardId, itemId, integration.template_id, recipient, error.message)
-        .run()
+      `,
+      )
+        .bind(
+          boardId,
+          itemId,
+          integration.template_id,
+          recipient,
+          error.message,
+        )
+        .run();
 
-      results.push({ recipient, status: 'failed', error: error.message })
+      results.push({ recipient, status: "failed", error: error.message });
     }
   }
 
-  return { results }
+  return { results };
 }
 
 async function getMondayItem(
   env: Env,
   boardId: string,
-  itemId: string
+  itemId: string,
 ): Promise<any> {
   const query = `
     query {
-      boards(ids: [${boardId}]) {
-        items(ids: [${itemId}]) {
+      items(ids: [${itemId}]) {
+        id
+        name
+        column_values {
           id
-          name
-          column_values {
-            id
-            text
-            value
-          }
+          text
+          value
         }
       }
     }
-  `
+  `;
 
-  const response = await fetch('https://api.monday.com/v2', {
-    method: 'POST',
+  console.log("Fetching item from Monday:", query);
+
+  const response = await fetch("https://api.monday.com/v2", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.MONDAY_API_KEY}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.MONDAY_API_KEY}`,
+      "API-Version": "2023-10",
     },
-    body: JSON.stringify({ query })
-  })
+    body: JSON.stringify({ query }),
+  });
 
-  const data = await response.json()
-  return data.data?.boards?.[0]?.items?.[0]
+  const data = await response.json();
+  console.log("Monday API response for item:", JSON.stringify(data, null, 2));
+  return data.data?.items?.[0];
 }
 
 function extractRecipients(itemData: any, recipientColumns: string): string[] {
-  const recipients: string[] = []
-  const columns = JSON.parse(recipientColumns)
+  const recipients: string[] = [];
+  const columns = JSON.parse(recipientColumns);
 
   for (const columnId of columns) {
-    const columnValue = itemData?.column_values?.find((cv: any) => cv.id === columnId)
+    const columnValue = itemData?.column_values?.find(
+      (cv: any) => cv.id === columnId,
+    );
     if (columnValue?.text) {
-      const emails = columnValue.text.split(',').map((e: string) => e.trim())
-      recipients.push(...emails)
+      const emails = columnValue.text.split(",").map((e: string) => e.trim());
+      recipients.push(...emails);
     }
   }
 
-  return [...new Set(recipients)]
+  return [...new Set(recipients)];
 }
 
 function replaceVariables(template: string, itemData: any): string {
   const variables = {
-    item_name: itemData?.name || '',
-    item_id: itemData?.id || ''
-  }
+    item_name: itemData?.name || "",
+    item_id: itemData?.id || "",
+  };
 
-  let result = template
+  let result = template;
   for (const [key, value] of Object.entries(variables)) {
-    result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value as string)
+    result = result.replace(new RegExp(`\\{${key}\\}`, "g"), value as string);
   }
 
-  return result
+  return result;
 }
 
 async function prepareAttachments(
   env: Env,
   attachmentsJson: string,
-  itemData: any
+  itemData: any,
 ): Promise<any[]> {
-  const attachments = JSON.parse(attachmentsJson || '[]')
-  const result = []
+  const attachments = JSON.parse(attachmentsJson || "[]");
+  const result = [];
 
   for (const attachment of attachments) {
     try {
@@ -241,50 +311,50 @@ async function prepareAttachments(
         result.push({
           name: attachment.name,
           type: attachment.type,
-          data: attachment.data
-        })
-        continue
+          data: attachment.data,
+        });
+        continue;
       }
 
-      // 2. If it has a URL (common for Monday assets), fetch the content
+      // 2. If it has a URL (common for Monday assets), fetch content
       if (attachment.url) {
-        console.log(`Fetching attachment from URL: ${attachment.url}`)
-        const response = await fetch(attachment.url)
+        console.log(`Fetching attachment from URL: ${attachment.url}`);
+        const response = await fetch(attachment.url);
         if (response.ok) {
-          const blob = await response.blob()
-          const arrayBuffer = await blob.arrayBuffer()
+          const blob = await response.blob();
+          const arrayBuffer = await blob.arrayBuffer();
           const base64 = btoa(
             new Uint8Array(arrayBuffer).reduce(
               (data, byte) => data + String.fromCharCode(byte),
-              ''
-            )
-          )
-          
+              "",
+            ),
+          );
+
           result.push({
             name: attachment.name,
             type: attachment.type || blob.type,
-            data: `data:${attachment.type || blob.type};base64,${base64}`
-          })
+            data: `data:${attachment.type || blob.type};base64,${base64}`,
+          });
         }
-        continue
+        continue;
       }
 
       // 3. Fallback for old "source" format if it exists
-      if (attachment.source === 'monday') {
+      if (attachment.source === "monday") {
         const columnValue = itemData?.column_values?.find(
-          (cv: any) => cv.id === attachment.column_id
-        )
+          (cv: any) => cv.id === attachment.column_id,
+        );
         if (columnValue?.value) {
-          const files = JSON.parse(columnValue.value)
-          result.push(...files)
+          const files = JSON.parse(columnValue.value);
+          result.push(...files);
         }
       }
     } catch (err) {
-      console.error(`Failed to prepare attachment ${attachment.name}:`, err)
+      console.error(`Failed to prepare attachment ${attachment.name}:`, err);
     }
   }
 
-  return result
+  return result;
 }
 
 async function sendGmail(
@@ -294,73 +364,80 @@ async function sendGmail(
   subject: string,
   body: string,
   attachments: any[],
-  ccRecipients: string[] = []
+  ccRecipients: string[] = [],
 ): Promise<void> {
-  const board = await env.DB.prepare(
-    'SELECT * FROM boards WHERE board_id = ?'
-  )
+  const board = (await env.DB.prepare("SELECT * FROM boards WHERE board_id = ?")
     .bind(boardId)
-    .first() as any
+    .first()) as any;
 
   if (!board) {
-    throw new EmailError('Board not configured')
+    throw new EmailError("Board not configured");
   }
 
   // Refresh token if needed
-  const accessToken = await refreshGmailToken(env, board)
+  const accessToken = await refreshGmailToken(env, board);
+  console.log("ACCESS_TOKEN_FOR_DEBUGGING:", accessToken);
 
-  // Send email using Gmail API
-  const ccHeader = ccRecipients.length > 0 ? `Cc: ${ccRecipients.join(', ')}\r\n` : ''
-  const email = [
+  // Create an extremely minimal payload
+  const minimalEmail = [
     `To: ${recipient}`,
-    ccHeader,
-    `Subject: ${subject}`,
-    'Content-Type: text/html; charset=utf-8',
-    '',
-    body
-  ].join('\r\n')
+    `Subject: Minimal Test`,
+    "",
+    "Test body",
+  ].join("\r\n");
 
   const response = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`,
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'message/rfc822'
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-      body: btoa(email).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    }
-  )
+      body: JSON.stringify({
+        raw: btoa(minimalEmail)
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, ""),
+      }),
+    },
+  );
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new EmailError(`Failed to send Gmail: ${error}`)
+    const error = await response.text();
+    throw new EmailError(`Failed to send Gmail: ${error}`);
   }
 }
 
 async function refreshGmailToken(env: Env, board: any): Promise<string> {
+  const refreshToken = decryptToken(board.refresh_token, env.ENCRYPTION_KEY);
   // Check if token needs refresh
-  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: env.GOOGLE_CLIENT_ID!,
-      client_secret: env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: board.refresh_token,
-      grant_type: 'refresh_token'
-    })
-  })
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
 
-  const tokens = await tokenResponse.json()
+  const tokens = await tokenResponse.json();
+  if (!tokens.access_token) {
+    throw new Error(`Failed to refresh Gmail token: ${JSON.stringify(tokens)}`);
+  }
+
+  const encryptedAccess = encryptToken(tokens.access_token, env.ENCRYPTION_KEY);
 
   // Update access token in database
   await env.DB.prepare(
-    'UPDATE boards SET access_token = ?, updated_at = CURRENT_TIMESTAMP WHERE board_id = ?'
+    "UPDATE boards SET access_token = ?, updated_at = CURRENT_TIMESTAMP WHERE board_id = ?",
   )
-    .bind(tokens.access_token, board.board_id)
-    .run()
+    .bind(encryptedAccess, board.board_id)
+    .run();
 
-  return tokens.access_token
+  return tokens.access_token;
 }
 
 async function sendOutlook(
@@ -370,81 +447,86 @@ async function sendOutlook(
   subject: string,
   body: string,
   attachments: any[],
-  ccRecipients: string[] = []
+  ccRecipients: string[] = [],
 ): Promise<void> {
-  const board = await env.DB.prepare(
-    'SELECT * FROM boards WHERE board_id = ?'
-  )
+  const board = (await env.DB.prepare("SELECT * FROM boards WHERE board_id = ?")
     .bind(boardId)
-    .first() as any
+    .first()) as any;
 
   if (!board) {
-    throw new EmailError('Board not configured')
+    throw new EmailError("Board not configured");
   }
 
   // Refresh token if needed
-  const accessToken = await refreshOutlookToken(env, board)
+  const accessToken = await refreshOutlookToken(env, board);
 
   // Send email using Microsoft Graph API
-  const ccRecipientsList = ccRecipients.map(email => ({ emailAddress: { address: email } }))
+  const ccRecipientsList = ccRecipients.map((email) => ({
+    emailAddress: { address: email },
+  }));
   const email = {
     message: {
       subject,
       body: {
-        contentType: 'HTML',
-        content: body
+        contentType: "HTML",
+        content: body,
       },
       toRecipients: [
         {
           emailAddress: {
-            address: recipient
-          }
-        }
+            address: recipient,
+          },
+        },
       ],
-      ...(ccRecipients.length > 0 && { ccRecipients: ccRecipientsList })
-    }
-  }
+      ...(ccRecipients.length > 0 && { ccRecipients: ccRecipientsList }),
+    },
+  };
 
-  const response = await fetch(
-    'https://graph.microsoft.com/v1.0/me/sendMail',
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(email)
-    }
-  )
+  const response = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(email),
+  });
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new EmailError(`Failed to send Outlook: ${error}`)
+    const error = await response.text();
+    throw new EmailError(`Failed to send Outlook: ${error}`);
   }
 }
 
 async function refreshOutlookToken(env: Env, board: any): Promise<string> {
+  const refreshToken = decryptToken(board.refresh_token, env.ENCRYPTION_KEY);
   const tokenResponse = await fetch(
-    'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    "https://login.microsoftonline.com/common/oauth2/v2.0/token",
     {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        client_id: env.MICROSOFT_CLIENT_ID!,
-        client_secret: env.MICROSOFT_CLIENT_SECRET!,
-        refresh_token: board.refresh_token,
-        grant_type: 'refresh_token'
-      })
-    }
-  )
+        client_id: env.MICROSOFT_CLIENT_ID,
+        client_secret: env.MICROSOFT_CLIENT_SECRET,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    },
+  );
 
-  const tokens = await tokenResponse.json()
+  const tokens = await tokenResponse.json();
+  if (!tokens.access_token) {
+    throw new Error(
+      `Failed to refresh Outlook token: ${JSON.stringify(tokens)}`,
+    );
+  }
+
+  const encryptedAccess = encryptToken(tokens.access_token, env.ENCRYPTION_KEY);
 
   await env.DB.prepare(
-    'UPDATE boards SET access_token = ?, updated_at = CURRENT_TIMESTAMP WHERE board_id = ?'
+    "UPDATE boards SET access_token = ?, updated_at = CURRENT_TIMESTAMP WHERE board_id = ?",
   )
-    .bind(tokens.access_token, board.board_id)
-    .run()
+    .bind(encryptedAccess, board.board_id)
+    .run();
 
-  return tokens.access_token
+  return tokens.access_token;
 }

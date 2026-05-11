@@ -1,78 +1,200 @@
 .integration-page {
-  max-width: 900px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .integration-recipes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+  margin-top: 32px;
 }
 
 .recipe-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #f0f1f5;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
-  background-color: #f5f6f7;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .recipe-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
   border-color: #0073ea;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .recipe-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+  font-size: 32px;
+  margin-bottom: 20px;
+  width: 60px;
+  height: 60px;
+  background: #f0f4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  transition: all 0.3s ease;
 }
 
-.recipe-content {
-  flex: 1;
-  margin-bottom: 1rem;
+.recipe-card:hover .recipe-icon {
+  background: #0073ea;
+  transform: scale(1.1) rotate(-5deg);
 }
 
 .recipe-content h3 {
-  font-size: 1.1rem;
-  color: #323338;
-  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  color: #1c1f3b;
+  font-weight: 700;
 }
 
 .recipe-content p {
-  font-size: 0.9rem;
   color: #676879;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  flex-grow: 1;
 }
 
 .recipe-btn {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: #0073ea;
-  color: white;
+  background: #f5f6f7;
+  color: #323338;
   border: none;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  margin-top: auto;
+  border: 1px solid #e6e9ef;
+  width: 100%;
 }
 
-.recipe-btn:hover {
-  background-color: #005bb5;
+.recipe-card:hover .recipe-btn {
+  background: #0073ea;
+  color: white;
+  border-color: #0073ea;
+  box-shadow: 0 4px 12px rgba(0, 115, 234, 0.3);
 }
 
 .loading-state {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 4rem;
+  padding: 80px;
   text-align: center;
 }
 
 .loading-state p {
   color: #676879;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  margin-top: 16px;
+}
+
+/* Active Integrations Styles */
+.active-integrations-section {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.active-integrations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.active-integration-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #f0f1f5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.active-integration-item:hover {
+  border-color: #0073ea;
+  box-shadow: 0 8px 16px rgba(0, 115, 234, 0.08);
+  transform: translateX(5px);
+}
+
+.integration-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.integration-type-badge {
+  width: 48px;
+  height: 48px;
+  background: #f0f7ff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border: 1px solid #e0eeff;
+}
+
+.integration-details h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1c1f3b;
+  margin: 0 0 4px 0;
+}
+
+.integration-details p {
+  font-size: 0.85rem;
+  color: #676879;
+  margin: 0;
+}
+
+.integration-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-edit, .btn-delete {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.btn-edit {
+  background: #f0f7ff;
+  color: #0073ea;
+}
+
+.btn-edit:hover {
+  background: #0073ea;
+  color: white;
+}
+
+.btn-delete {
+  background: #fff0f0;
+  color: #d83a52;
+}
+
+.btn-delete:hover {
+  background: #d83a52;
+  color: white;
 }

@@ -7,8 +7,6 @@
     "build": "vite build",
     "expose": "mapps tunnel:create -p 8301",
     "server": "vite",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
     "stop": "kill-port 8301 && kill-port 4049 && kill-port 4040"
   },
   "dependencies": {

@@ -11,7 +11,8 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization, ngrok-skip-browser-warning",
+      "Access-Control-Allow-Headers":
+        "Content-Type, Authorization, ngrok-skip-browser-warning",
       "Access-Control-Max-Age": "86400",
     };
 
@@ -23,36 +24,34 @@ export default {
       // Auth routes
       if (path.startsWith("/auth/")) {
         const { handleAuth } = await import("./handlers/auth");
-        const response = await handleAuth(request, env, url);
-        return withCors(response, corsHeaders);
+        return withCors(await handleAuth(request, env, url), corsHeaders);
       }
 
       // Template routes
       if (path.startsWith("/templates")) {
         const { handleTemplates } = await import("./handlers/templates");
-        const response = await handleTemplates(request, env, url);
-        return withCors(response, corsHeaders);
+        return withCors(await handleTemplates(request, env, url), corsHeaders);
       }
 
       // Integration routes
       if (path.startsWith("/integrations")) {
         const { handleIntegrations } = await import("./handlers/integrations");
-        const response = await handleIntegrations(request, env, url);
-        return withCors(response, corsHeaders);
+        return withCors(
+          await handleIntegrations(request, env, url),
+          corsHeaders,
+        );
       }
 
       // Email routes
       if (path.startsWith("/email/")) {
         const { handleEmail } = await import("./handlers/email");
-        const response = await handleEmail(request, env, url);
-        return withCors(response, corsHeaders);
+        return withCors(await handleEmail(request, env, url), corsHeaders);
       }
 
       // Webhook route
       if (path === "/webhook") {
         const { handleWebhook } = await import("./handlers/webhook");
-        const response = await handleWebhook(request, env);
-        return withCors(response, corsHeaders);
+        return withCors(await handleWebhook(request, env), corsHeaders);
       }
 
       // Health check
@@ -65,13 +64,52 @@ export default {
         return withCors(response, corsHeaders);
       }
 
-      // 404
-      const response = errorResponse(new Error("Not found"), 404);
-      return withCors(response, corsHeaders);
+      // Proxy everything else to frontend (Vite dev server on port 8301)
+      // This allows using a single tunnel for both frontend and backend
+      const frontendUrl = new URL(request.url);
+      frontendUrl.protocol = "http:";
+      frontendUrl.host = "localhost:8301";
+
+      const proxyHeaders = new Headers(request.headers);
+      // Crucial: Delete Host header to let Vite handle it
+      proxyHeaders.delete("Host");
+
+      try {
+        const frontendResponse = await fetch(frontendUrl.toString(), {
+          method: request.method,
+          headers: proxyHeaders,
+          body:
+            request.method !== "GET" && request.method !== "HEAD"
+              ? await request.arrayBuffer()
+              : undefined,
+          redirect: "manual",
+        });
+
+        // Create a new response with the frontend body
+        const responseHeaders = new Headers(frontendResponse.headers);
+        // Ensure CORS headers are present
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+          responseHeaders.set(key, value);
+        });
+
+        return new Response(frontendResponse.body, {
+          status: frontendResponse.status,
+          statusText: frontendResponse.statusText,
+          headers: responseHeaders,
+        });
+      } catch (proxyError: any) {
+        console.error("Proxy error:", proxyError.message);
+        return errorResponse(
+          new Error(
+            `Frontend not reachable at 127.0.0.1:8301. Make sure 'npm start' is running in the frontend directory.`,
+          ),
+          502,
+        );
+      }
     } catch (error: any) {
       console.error("CRITICAL ERROR:", error.message);
       if (error.stack) console.error(error.stack);
-      
+
       const response = errorResponse(error, error.statusCode || 500);
       return withCors(response, corsHeaders);
     }

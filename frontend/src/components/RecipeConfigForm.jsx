@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Flex, Text, Label, Checkbox, Box } from '@vibe/core'
+import { Flex, Text, Checkbox } from '@vibe/core'
+import { Box } from '@vibe/layout'
+import './RecipeConfigForm.css'
 
 export default function RecipeConfigForm({ recipeType, templates, boardColumns, integration, onSubmit, onCancel }) {
   const [templateId, setTemplateId] = useState(integration?.template_id || '')
@@ -23,81 +25,112 @@ export default function RecipeConfigForm({ recipeType, templates, boardColumns, 
   const needsTriggerValue = ['status_change'].includes(recipeType)
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form id="recipe-config-form" className="recipe-config-form" onSubmit={handleSubmit}>
       {/* Template Selection */}
-      <Box marginBottom="16px">
-        <Label>Email Template</Label>
+      <div className="form-section" style={{ animationDelay: '0.05s' }}>
+        <div className="field-label">
+          <span className="field-icon">📝</span>
+          <Text weight="bold">Email Template</Text>
+        </div>
         <select
           value={templateId}
           onChange={(e) => setTemplateId(e.target.value)}
-          style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e0e0e0' }}
+          className="custom-select"
         >
-          <option value="">Select template</option>
-          {templates.map(t => (
+          <option value="">Select a template to send...</option>
+          {templates?.map(t => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
         </select>
-      </Box>
+      </div>
 
       {/* Trigger Column Selection */}
       {needsTriggerColumn && (
-        <Box marginBottom="16px">
-          <Label>Trigger Column</Label>
+        <div className="form-section" style={{ animationDelay: '0.1s' }}>
+          <div className="field-label">
+            <span className="field-icon">⚡</span>
+            <Text weight="bold">Trigger Column</Text>
+          </div>
           <select
             value={triggerColumn}
             onChange={(e) => setTriggerColumn(e.target.value)}
-            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e0e0e0' }}
+            className="custom-select"
           >
-            <option value="">Select column</option>
-            {boardColumns.filter(c => ['status', 'date', 'people', 'button'].includes(c.type)).map(col => (
+            <option value="">Select the column that triggers this...</option>
+            {boardColumns?.filter(c => ['status', 'date', 'people', 'button'].includes(c.type)).map(col => (
               <option key={col.id} value={col.id}>{col.title}</option>
             ))}
           </select>
-        </Box>
+        </div>
       )}
 
       {/* Trigger Value (for status_change) */}
       {needsTriggerValue && triggerColumn && (
-        <Box marginBottom="16px">
-          <Label>Trigger When Status Is</Label>
+        <div className="form-section" style={{ animationDelay: '0.15s' }}>
+          <div className="field-label">
+            <span className="field-icon">🎯</span>
+            <Text weight="bold">Trigger When Status Is</Text>
+          </div>
           <select
             value={triggerValue}
             onChange={(e) => setTriggerValue(e.target.value)}
-            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e0e0e0' }}
+            className="custom-select"
           >
-            <option value="">Select status</option>
-            {boardColumns.find(c => c.id === triggerColumn)?.settings_labels?.map(label => (
+            <option value="">Select the target status...</option>
+            {Array.isArray(boardColumns?.find(c => c.id === triggerColumn)?.settings_labels) && 
+             boardColumns.find(c => c.id === triggerColumn).settings_labels.map(label => (
               <option key={label} value={label}>{label}</option>
             ))}
           </select>
-        </Box>
+        </div>
       )}
 
       {/* Recipient Columns Selection */}
-      <Box marginBottom="16px">
-        <Label>Recipient Columns</Label>
-        {boardColumns.filter(c => ['email', 'people'].includes(c.type)).map(col => (
-          <Flex key={col.id} alignItems="center" marginBottom="8px">
-            <Checkbox
-              checked={recipientColumns.includes(col.id)}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setRecipientColumns([...recipientColumns, col.id])
-                } else {
-                  setRecipientColumns(recipientColumns.filter(id => id !== col.id))
-                }
-              }}
-            />
-            <Text marginLeft="8px">{col.title}</Text>
-          </Flex>
-        ))}
-      </Box>
+      <div className="form-section" style={{ animationDelay: '0.2s' }}>
+        <div className="field-label">
+          <span className="field-icon">📧</span>
+          <Text weight="bold">Recipient Columns</Text>
+        </div>
+        <div className="recipient-grid">
+          {boardColumns?.filter(c => ['email', 'people'].includes(c.type)).map(col => {
+            const isSelected = recipientColumns?.includes(col.id);
+            return (
+              <div 
+                key={col.id} 
+                className={`recipient-item ${isSelected ? 'selected' : ''}`}
+                onClick={() => {
+                  if (isSelected) {
+                    setRecipientColumns(recipientColumns.filter(id => id !== col.id))
+                  } else {
+                    setRecipientColumns([...recipientColumns, col.id])
+                  }
+                }}
+              >
+                <Checkbox
+                  checked={isSelected}
+                  readOnly
+                />
+                <span className="recipient-label">{col.title}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* CC Enabled */}
-      <Box marginBottom="16px">
-        <Checkbox checked={ccEnabled} onChange={(e) => setCcEnabled(e.target.checked)} />
-        <Text marginLeft="8px">CC all recipients</Text>
-      </Box>
+      <div className="form-section" style={{ animationDelay: '0.25s' }}>
+        <div className="cc-toggle">
+          <Checkbox 
+            checked={ccEnabled} 
+            onChange={(e) => setCcEnabled(e.target.checked)} 
+          />
+          <div className="cc-text-container">
+            <span className="cc-title">CC all recipients</span>
+            <span className="cc-desc">All selected recipients will see each other in the email.</span>
+          </div>
+        </div>
+      </div>
     </form>
   )
 }
+

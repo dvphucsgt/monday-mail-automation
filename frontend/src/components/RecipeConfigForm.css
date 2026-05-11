@@ -1,0 +1,115 @@
+.recipe-config-form {
+  padding: 8px 4px;
+}
+
+.form-section {
+  margin-bottom: 24px;
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #323338;
+  margin-bottom: 10px;
+}
+
+.field-icon {
+  font-size: 1.1rem;
+}
+
+.custom-select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #d0d4e4;
+  background-color: #ffffff;
+  font-size: 0.95rem;
+  color: #323338;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23676879' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+
+.custom-select:hover {
+  border-color: #0073ea;
+  box-shadow: 0 2px 8px rgba(0, 115, 234, 0.1);
+}
+
+.custom-select:focus {
+  outline: none;
+  border-color: #0073ea;
+  box-shadow: 0 0 0 3px rgba(0, 115, 234, 0.2);
+}
+
+.recipient-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.recipient-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f5f6f7;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.recipient-item:hover {
+  background: #edf5ff;
+  border-color: #cce5ff;
+}
+
+.recipient-item.selected {
+  background: #edf5ff;
+  border-color: #0073ea;
+}
+
+.recipient-label {
+  margin-left: 10px;
+  font-size: 0.9rem;
+  color: #323338;
+}
+
+.cc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f0f4ff;
+  border-radius: 12px;
+  margin-top: 8px;
+  border: 1px solid #d0d9ff;
+}
+
+.cc-text-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.cc-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1c1f3b;
+}
+
+.cc-desc {
+  font-size: 0.8rem;
+  color: #676879;
+}

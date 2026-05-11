@@ -1991,9 +1991,6 @@ export default function TemplateList({ boardId, sessionToken }) {
                       onClick={async (e) => {
                         const target = e.currentTarget;
                         const originalContent = target.innerHTML;
-
-                        console.log('Attaching file from board:', asset.name, asset.public_url);
-
                         // 1. Pre-add to attachments list (Immediate UI feedback)
                         const placeholderAtt = {
                           id: asset.id,

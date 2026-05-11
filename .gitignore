@@ -58,4 +58,5 @@ shared/**/*.js
 .playwright-mcp
 .mcp.json
 CLAUDE.md
+docs/
 image_design/

@@ -1,10 +1,21 @@
 import jwt from "jsonwebtoken";
 import type { Env } from "./types";
 
-export function verifyMondayJwt(token: string, secret: string) {
+export function verifyMondayJwt(
+  token: string,
+  secret: string,
+  signingSecret?: string,
+) {
   try {
     const sessionToken = token.replace("Bearer ", "");
-    return jwt.verify(sessionToken, secret) as any;
+    try {
+      return jwt.verify(sessionToken, secret) as any;
+    } catch (e) {
+      if (signingSecret) {
+        return jwt.verify(sessionToken, signingSecret) as any;
+      }
+      throw e;
+    }
   } catch (e: any) {
     console.error("JWT Verification Error:", e.message);
     return null;
@@ -21,7 +32,11 @@ export function verifyAuth(request: Request, env: Env, url: URL) {
     };
   }
 
-  const payload = verifyMondayJwt(authHeader, env.MONDAY_CLIENT_SECRET);
+  const payload = verifyMondayJwt(
+    authHeader,
+    env.MONDAY_CLIENT_SECRET,
+    env.MONDAY_SIGNING_SECRET,
+  );
   if (!payload) {
     return {
       isValid: false,
