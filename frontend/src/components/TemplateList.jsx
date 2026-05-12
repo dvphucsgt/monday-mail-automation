@@ -124,6 +124,7 @@ export default function TemplateList({ boardId, sessionToken }) {
   const tableDropdownRef = React.useRef(null)
   const [tableData, setTableData] = useState({ rows: 3, cols: 3 })
   const [tableMenuConfig, setTableMenuConfig] = useState(null)
+  const [columnSearch, setColumnSearch] = useState('')
   const [tableInserter, setTableInserter] = useState(null)
   const [authStatus, setAuthStatus] = useState({ authenticated: false })
   const [formData, setFormData] = useState({ name: 'New template', subject: '', body: '', attachments: [] })
@@ -160,23 +161,9 @@ export default function TemplateList({ boardId, sessionToken }) {
     fetchBoardColumns()
   }, [boardId])
 
-  const DEFAULT_COLUMNS = [
-    { id: 'name', title: 'Name', type: 'name' },
-    { id: 'person', title: 'Person', type: 'people' },
-    { id: 'status', title: 'Status', type: 'color' },
-    { id: 'date4', title: 'Date', type: 'date' },
-    { id: 'email', title: 'Email', type: 'email' },
-    { id: 'text_email', title: 'Text email', type: 'text' },
-    { id: 'contacts', title: 'Contacts', type: 'text' },
-    { id: 'mirror_email', title: 'Mirror-email', type: 'lookup' },
-    { id: 'mirror_person', title: 'Mirror person', type: 'lookup' },
-    { id: 'mirror_text', title: 'Mirror - text', type: 'lookup' },
-  ]
-
   const fetchBoardColumns = async () => {
     if (!boardId) {
-      // Fallback columns for local development or invalid boardId
-      setBoardColumns(DEFAULT_COLUMNS)
+      setBoardColumns([])
       return
     }
     try {
@@ -205,9 +192,9 @@ export default function TemplateList({ boardId, sessionToken }) {
 
       const boardData = res?.data?.boards?.[0]
       const columns = boardData?.columns || []
-      setBoardColumns(columns.length > 0 ? columns : DEFAULT_COLUMNS)
+      console.log(columns)
+      setBoardColumns(columns)
 
-      // Extract unique assets from items
       const allAssets = []
       const assetIds = new Set()
 
@@ -222,7 +209,7 @@ export default function TemplateList({ boardId, sessionToken }) {
       setBoardAssets(allAssets)
     } catch (err) {
       console.error('Error fetching board data:', err)
-      setBoardColumns(DEFAULT_COLUMNS)
+      setBoardColumns([])
     }
   }
 
@@ -417,6 +404,7 @@ export default function TemplateList({ boardId, sessionToken }) {
   const handleCreateTemplate = () => {
     setEditingTemplateId(null)
     setFormData({ name: 'New template', subject: '', body: '', attachments: [] })
+    setColumnSearch('')
     setShowCreateModal(true)
   }
 
@@ -428,6 +416,7 @@ export default function TemplateList({ boardId, sessionToken }) {
       body: template.body,
       attachments: JSON.parse(template.attachments || '[]')
     })
+    setColumnSearch('')
     setShowCreateModal(true)
   }
 
@@ -1870,7 +1859,7 @@ export default function TemplateList({ boardId, sessionToken }) {
             {/* Right Sidebar */}
             <Box style={{ width: 320, borderLeft: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
 
-              <Box style={{ padding: '24px 16px 16px', borderBottom: '1px solid #E5E7EB' }}>
+              <Box style={{ padding: '24px 16px 16px', borderBottom: '1px solid #E5E7EB', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <Flex style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, cursor: 'pointer' }}>
                   <Flex style={{ alignItems: 'center', gap: 8 }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -1879,104 +1868,67 @@ export default function TemplateList({ boardId, sessionToken }) {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                 </Flex>
 
-                <Flex style={{ borderBottom: '1px solid #E5E7EB', marginBottom: 16 }}>
-                  <div style={{ paddingBottom: 8, borderBottom: '2px solid #0073ea', color: '#0073ea', fontSize: 14, fontWeight: 500, marginRight: 20, cursor: 'pointer' }}>From board</div>
-                  <div style={{ paddingBottom: 8, color: '#6E7278', fontSize: 14, cursor: 'pointer' }}>From subitems</div>
-                </Flex>
-
                 <div style={{ position: 'relative', marginBottom: 16 }}>
                   <input
+                    value={columnSearch}
+                    onChange={(e) => setColumnSearch(e.target.value)}
                     style={{ width: '100%', padding: '8px 8px 8px 32px', borderRadius: 4, border: '1px solid #E5E7EB', fontSize: 13, boxSizing: 'border-box', outline: 'none', color: '#323338' }}
-                    placeholder="Search"
+                    placeholder="Search columns..."
                   />
                   <svg style={{ position: 'absolute', left: 10, top: 10, color: '#9CA3AF' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </div>
 
+                <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
                 <Flex style={{ flexWrap: 'wrap', gap: 8 }}>
-                  {/* System variables - always available */}
                   {[
-                    { label: 'User Name', varName: 'user_name' },
-                    { label: 'Board Name', varName: 'board_name' },
-                    { label: 'Group Name', varName: 'group_name' },
-                    { label: 'Item Name', varName: 'item_name' },
-                    { label: 'Item ID', varName: 'item_id' },
-                  ].map((chip) => (
-                    <div
-                      key={chip.varName}
-                      onClick={() => {
-                        if (editorRef.current) {
-                          editorRef.current.model.change(writer => {
-                            writer.insertText(`{{${chip.varName}}}`, editorRef.current.model.document.selection.getFirstPosition());
-                          });
-                        } else {
-                          setFormData({ ...formData, body: formData.body + `{{${chip.varName}}}` })
-                        }
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        border: '1px solid #d0e8ff',
-                        borderRadius: 4,
-                        fontSize: 13,
-                        color: '#0073ea',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        backgroundColor: '#f0f7ff',
-                        transition: 'all 0.2s',
-                        fontWeight: 500
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#d0e8ff';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f0f7ff';
-                      }}
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" /></svg>
-                      {chip.label}
-                    </div>
-                  ))}
-
-                  {/* Board columns - fetched dynamically */}
-                  {boardColumns.map((col) => (
-                    <div
-                      key={col.id}
-                      onClick={() => {
-                        if (editorRef.current) {
-                          editorRef.current.model.change(writer => {
-                            writer.insertText(`{{${col.id}}}`, editorRef.current.model.document.selection.getFirstPosition());
-                          });
-                        } else {
-                          setFormData({ ...formData, body: formData.body + `{{${col.id}}}` })
-                        }
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        border: '1px solid #E5E7EB',
-                        borderRadius: 4,
-                        fontSize: 13,
-                        color: '#6E7278',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        backgroundColor: '#fff',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.borderColor = '#0073ea';
-                        e.currentTarget.style.color = '#0073ea';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.borderColor = '#E5E7EB';
-                        e.currentTarget.style.color = '#6E7278';
-                      }}
-                    >
-                      {col.title}
-                    </div>
-                  ))}
+                    { id: '__item_name__', title: 'Item Name', type: 'system' },
+                    ...boardColumns.filter((col) => !['file', 'subtasks'].includes(col.type))
+                  ]
+                    .filter((col) =>
+                      !columnSearch || col.title.toLowerCase().includes(columnSearch.toLowerCase())
+                    )
+                    .map((col) => (
+                      <div
+                        key={col.id}
+                        onClick={() => {
+                          const varName = col.id === '__item_name__'
+                            ? 'item_name'
+                            : col.title.toLowerCase().replace(/\s+/g, '_');
+                          if (editorRef.current) {
+                            editorRef.current.model.change(writer => {
+                              writer.insertText(`{{${varName}}}`, editorRef.current.model.document.selection.getFirstPosition());
+                            });
+                          } else {
+                            setFormData({ ...formData, body: formData.body + `{{${varName}}}` })
+                          }
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          border: '1px solid #d0e8ff',
+                          borderRadius: 4,
+                          fontSize: 13,
+                          color: '#0073ea',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          backgroundColor: '#f0f7ff',
+                          transition: 'all 0.2s',
+                          fontWeight: 500
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = '#d0e8ff';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f0f7ff';
+                        }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" /></svg>
+                        {col.title}
+                      </div>
+                    ))}
                 </Flex>
+                </div>
               </Box>
 
               <Box style={{ padding: '24px 16px' }}>

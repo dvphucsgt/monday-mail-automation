@@ -60,3 +60,5 @@ shared/**/*.js
 CLAUDE.md
 docs/
 image_design/
+AGENTS.md
+scripts/
