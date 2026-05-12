@@ -1,4 +1,4 @@
-# Monday Supermail
+# Monday AutomatedMail
 
 Ứng dụng Monday.com để tự động hóa việc gửi email với mẫu có sẵn.
 

@@ -3,13 +3,16 @@ import { handleTemplates } from "./handlers/templates";
 import { handleIntegrations } from "./handlers/integrations";
 import { handleEmail } from "./handlers/email";
 import { handleWebhook } from "./handlers/webhook";
-import { jsonResponse } from "./utils/response";
+import { jsonResponse, errorResponse } from "./utils/response";
 import type { Env } from "./utils/types";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
+    const method = request.method;
+
+    console.log(`[Request] Method: [${method}], Path: [${path}]`);
 
     // Handle CORS
     const origin = request.headers.get("Origin") || "*";
@@ -21,28 +24,28 @@ export default {
       "Access-Control-Max-Age": "86400",
     };
 
-    if (request.method === "OPTIONS") {
+    if (method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     try {
-      // API Routes - Explicitly check paths
-      if (path.startsWith("/auth")) {
+      // API Routes
+      if (path === "/auth" || path.startsWith("/auth/")) {
         const response = await handleAuth(request, env, url);
         return withCors(response, corsHeaders);
       }
 
-      if (path.startsWith("/templates")) {
+      if (path === "/templates" || path.startsWith("/templates/")) {
         const response = await handleTemplates(request, env, url);
         return withCors(response, corsHeaders);
       }
 
-      if (path.startsWith("/integrations")) {
+      if (path === "/integrations" || path.startsWith("/integrations/")) {
         const response = await handleIntegrations(request, env, url);
         return withCors(response, corsHeaders);
       }
 
-      if (path.startsWith("/email")) {
+      if (path === "/email" || path.startsWith("/email/")) {
         const response = await handleEmail(request, env, url);
         return withCors(response, corsHeaders);
       }
@@ -72,10 +75,10 @@ export default {
 
       try {
         const frontendResponse = await fetch(frontendUrl.toString(), {
-          method: request.method,
+          method: method,
           headers: proxyHeaders,
           body:
-            request.method !== "GET" && request.method !== "HEAD"
+            method !== "GET" && method !== "HEAD"
               ? await request.arrayBuffer()
               : undefined,
           redirect: "manual",

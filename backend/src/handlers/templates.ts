@@ -9,6 +9,8 @@ export async function handleTemplates(
   url: URL,
 ): Promise<Response> {
   const path = url.pathname;
+  const method = request.method;
+  console.log(`[Templates] Handling ${method} ${path}`);
 
   // Verify auth for all template routes
   const auth = verifyAuth(request, env, url);
@@ -68,9 +70,15 @@ export async function handleTemplates(
     return successResponse({ template }, "Template created successfully");
   }
 
+  console.log(`[Templates] Path starts with /templates/: ${path.startsWith("/templates/")}`);
+  console.log(`[Templates] Method is PUT: ${request.method === "PUT"}`);
+
   // PUT /templates/:id
   if (path.startsWith("/templates/") && request.method === "PUT") {
-    const templateId = parseInt(path.split("/").pop()!);
+    const segments = path.split("/");
+    const templateIdStr = segments.pop() || segments.pop(); // Handle potential trailing slash
+    const templateId = parseInt(templateIdStr!);
+    console.log(`[Templates] Updating template ID: ${templateId}`);
     const body = await request.json();
     const { name, subject, body: content, attachments } = body;
 

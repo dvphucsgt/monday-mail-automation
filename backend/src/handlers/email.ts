@@ -101,7 +101,31 @@ export async function sendEmail(
 
   // 4. Prepare Content & Attachments
   const subject = replaceVariables(integration.subject, itemData);
-  const body = replaceVariables(integration.body, itemData);
+  let body = replaceVariables(integration.body, itemData);
+  
+  // Wrap body with common email styles to ensure images are responsive
+  body = `
+    <style>
+      img {
+        max-width: 100% !important;
+        height: auto !important;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+      }
+    </style>
+    ${body}
+  `;
+
+  // Standardize img tags: convert style width to attribute width for better email client compatibility
+  body = body.replace(/<img[^>]+style="[^"]*width:\s*(\d+)px;?[^"]*"[^>]*>/g, (match, p1) => {
+    if (!match.includes('width=')) {
+      return match.replace('<img', `<img width="${p1}"`);
+    }
+    return match;
+  });
+  
   const attachments = await prepareAttachments(env, integration.attachments, itemData);
 
   console.log(`  [Email] Sending to: ${recipients.join(", ")} | Attachments: ${attachments.length}`);

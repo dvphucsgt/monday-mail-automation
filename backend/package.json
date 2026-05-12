@@ -1,7 +1,7 @@
 {
   "name": "monday-super-mail-backend",
   "version": "1.0.0",
-  "description": "Backend for Monday Supermail app",
+  "description": "Backend for Monday AutomatedMail app",
   "main": "src/index.ts",
   "scripts": {
     "dev": "killall wrangler ; wrangler dev -e dev",

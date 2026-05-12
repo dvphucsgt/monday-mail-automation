@@ -41,7 +41,7 @@ export default function AuthPage({ onSuccess, context }) {
     <div className="page-container auth-page">
       <div className="auth-content">
         <div className="auth-header">
-          <h1>📧 Supermail</h1>
+          <h1>📧 AutomatedMail</h1>
           <p>Kết nối tài khoản email của bạn để bắt đầu</p>
         </div>
 
@@ -90,7 +90,7 @@ export default function AuthPage({ onSuccess, context }) {
         {error && <div className="auth-error">{error}</div>}
 
         <div className="auth-info">
-          <h3>Bạn có thể làm gì với Supermail?</h3>
+          <h3>Bạn có thể làm gì với AutomatedMail?</h3>
           <ul>
             <li>Tạo mẫu email có sẵn và gửi tự động</li>
             <li>Tích hợp với board Monday.com</li>

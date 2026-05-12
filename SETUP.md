@@ -1,4 +1,4 @@
-# Hướng dẫn cài đặt Monday Supermail
+# Hướng dẫn cài đặt Monday AutomatedMail
 
 ## Yêu cầu
 
@@ -114,7 +114,7 @@ Frontend sẽ chạy trên `http://localhost:8301`
 1. Truy cập [Monday Developers](https://developers.monday.com/)
 2. Click "Build an App"
 3. Cấu hình app:
-   - Name: Supermail
+   - Name: AutomatedMail
    - Description: Automated email sending with templates
 4. Thêm feature:
    - Type: Board View
