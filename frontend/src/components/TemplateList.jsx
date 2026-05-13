@@ -10,6 +10,8 @@ import AppContext from '../utils/AppContext'
 import LoginModal from './LoginModal'
 import { BASE_API_URL } from '../utils/constants'
 import TemplateSkeleton from './TemplateSkeleton'
+import { useToast } from '../utils/useToast.jsx'
+import EmailRecipientField from './EmailRecipientField'
 
 const Button = ({ children, kind = 'primary', size = 'medium', onClick, style = {}, ...props }) => {
   const baseStyle = {
@@ -59,10 +61,19 @@ const monday = mondaySdk()
 
 export default function TemplateList({ boardId, sessionToken }) {
   const { currentUser } = React.useContext(AppContext)
+  const toast = useToast()
   const editorRef = React.useRef(null)
   const [boardColumns, setBoardColumns] = useState([])
   const [boardAssets, setBoardAssets] = useState([])
-
+  const [sendingNow, setSendingNow] = useState(false)
+  const [showRecipients, setShowRecipients] = useState(false)
+  const [showCc, setShowCc] = useState(false)
+  const [showBcc, setShowBcc] = useState(false)
+  const [toError, setToError] = useState('')
+  const [toRecipients, setToRecipients] = useState([])
+  const [ccRecipients, setCcRecipients] = useState([])
+  const [bccRecipients, setBccRecipients] = useState([])
+  const [boardEmails, setBoardEmails] = useState([])
   // Inject specific fix styles for CKEditor layout
   useEffect(() => {
     const styleId = 'ck-layout-fix-style';
@@ -210,6 +221,50 @@ export default function TemplateList({ boardId, sessionToken }) {
     } catch (err) {
       console.error('Error fetching board data:', err)
       setBoardColumns([])
+    }
+  }
+
+  const fetchBoardEmails = async () => {
+    if (!boardId) return
+    try {
+      const res = await monday.api(`
+        query {
+          boards(ids: [${boardId}]) {
+            items_page(limit: 100) {
+              items {
+                column_values {
+                  text
+                  value
+                  column { type }
+                }
+              }
+            }
+          }
+        }
+      `)
+      const items = res?.data?.boards?.[0]?.items_page?.items || []
+      const emailSet = new Set()
+      for (const item of items) {
+        for (const cv of item.column_values) {
+          if (cv.column?.type === 'email' && cv.text?.trim()) {
+            emailSet.add(cv.text.trim().toLowerCase())
+          }
+          if ((cv.column?.type === 'people' || cv.column?.type === 'multiple-person') && cv.value) {
+            try {
+              const parsed = JSON.parse(cv.value)
+              const persons = Array.isArray(parsed?.personsOrTeams) ? parsed.personsOrTeams : []
+              for (const p of persons) {
+                if (p.kind === 'person' && p.email) {
+                  emailSet.add(p.email.trim().toLowerCase())
+                }
+              }
+            } catch {}
+          }
+        }
+      }
+      setBoardEmails([...emailSet].sort())
+    } catch (err) {
+      console.error('Error fetching board emails:', err)
     }
   }
 
@@ -405,7 +460,15 @@ export default function TemplateList({ boardId, sessionToken }) {
     setEditingTemplateId(null)
     setFormData({ name: 'New template', subject: '', body: '', attachments: [] })
     setColumnSearch('')
+    setToRecipients([])
+    setCcRecipients([])
+    setBccRecipients([])
+    setShowRecipients(false)
+    setShowCc(false)
+    setShowBcc(false)
+    setToError('')
     setShowCreateModal(true)
+    fetchBoardEmails()
   }
 
   const handleEditTemplate = (template) => {
@@ -417,7 +480,15 @@ export default function TemplateList({ boardId, sessionToken }) {
       attachments: JSON.parse(template.attachments || '[]')
     })
     setColumnSearch('')
+    setToRecipients([])
+    setCcRecipients([])
+    setBccRecipients([])
+    setShowRecipients(false)
+    setShowCc(false)
+    setShowBcc(false)
+    setToError('')
     setShowCreateModal(true)
+    fetchBoardEmails()
   }
 
   const handleDeleteTemplate = async (templateId) => {
@@ -481,6 +552,55 @@ export default function TemplateList({ boardId, sessionToken }) {
     } catch (error) {
       console.error('Error saving template:', error)
     }
+  }
+
+  const handleSendNow = () => {
+    if (toRecipients.length === 0) {
+      setToError('Recipient is required')
+      setShowRecipients(true)
+      return
+    }
+
+    setToError('')
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const allEmails = [...toRecipients, ...ccRecipients, ...bccRecipients]
+    const invalid = allEmails.find(e => !emailRegex.test(e))
+    if (invalid) {
+      setToError(`Invalid email: ${invalid}`)
+      return
+    }
+
+    toast.confirm('Send this email now?', {
+      onOk: async () => {
+        setSendingNow(true)
+        try {
+          const resp = await fetch(`${BASE_API_URL}/email/send-now`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              board_id: boardId,
+              to: toRecipients,
+              cc: ccRecipients,
+              bcc: bccRecipients,
+              subject: formData.subject,
+              body: formData.body,
+              attachments: formData.attachments || [],
+            }),
+          })
+          const data = await resp.json()
+          if (data.success) {
+            toast.success(`Email sent to ${toRecipients.length} recipient${toRecipients.length > 1 ? 's' : ''}`)
+          } else {
+            toast.error(data.data?.results?.[0]?.error || 'Failed to send email')
+          }
+        } catch (err) {
+          toast.error('Failed to send email: ' + err.message)
+        }
+        setSendingNow(false)
+      },
+      onCancel: () => {},
+    })
   }
 
   const handleLinkClick = () => {
@@ -1059,10 +1179,66 @@ export default function TemplateList({ boardId, sessionToken }) {
                     </Box>
                   )}
                 </div>
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, color: '#6E7278', cursor: 'pointer' }}>
+                <div
+                  style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, color: showRecipients ? '#0073ea' : '#6E7278', cursor: 'pointer', padding: '4px 8px', borderRadius: 4, transition: 'all 0.15s' }}
+                  onClick={() => setShowRecipients(!showRecipients)}
+                  title="Add recipients"
+                >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
                 </div>
               </Flex>
+
+              {/* Recipient Rows (To / CC / BCC) — hidden by default, shown on trigger */}
+              {showRecipients && (
+              <div style={{ borderBottom: '1px solid #E5E7EB' }}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '0 24px', paddingRight: 0 }}>
+                  <EmailRecipientField
+                    label="To"
+                    recipients={toRecipients}
+                    suggestions={boardEmails}
+                    onChange={emails => { setToRecipients(emails); if (toError) setToError('') }}
+                    error={toError}
+                    placeholder="Recipients"
+                  />
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingRight: 16, flexShrink: 0, height: 44 }}>
+                    <span
+                      style={{ fontSize: 13, color: '#0073ea', cursor: 'pointer', fontWeight: 500, userSelect: 'none' }}
+                      onClick={() => setShowCc(!showCc)}
+                    >
+                      Cc
+                    </span>
+                    <span
+                      style={{ fontSize: 13, color: '#0073ea', cursor: 'pointer', fontWeight: 500, userSelect: 'none' }}
+                      onClick={() => setShowBcc(!showBcc)}
+                    >
+                      Bcc
+                    </span>
+                  </div>
+                </div>
+                {showCc && (
+                  <div style={{ borderTop: '1px solid #F0F1F3', padding: '0 24px' }}>
+                    <EmailRecipientField
+                      label="Cc"
+                      recipients={ccRecipients}
+                      suggestions={boardEmails}
+                      onChange={setCcRecipients}
+                      placeholder="Carbon copy"
+                    />
+                  </div>
+                )}
+                {showBcc && (
+                  <div style={{ borderTop: '1px solid #F0F1F3', padding: '0 24px' }}>
+                    <EmailRecipientField
+                      label="Bcc"
+                      recipients={bccRecipients}
+                      suggestions={boardEmails}
+                      onChange={setBccRecipients}
+                      placeholder="Blind carbon copy"
+                    />
+                  </div>
+                )}
+              </div>
+              )}
 
               {/* Subject Row */}
               <Flex style={{ padding: '12px 24px', borderBottom: '1px solid #E5E7EB', alignItems: 'center', gap: 12 }}>
@@ -1882,6 +2058,9 @@ export default function TemplateList({ boardId, sessionToken }) {
                 <Flex style={{ flexWrap: 'wrap', gap: 8 }}>
                   {[
                     { id: '__item_name__', title: 'Item Name', type: 'system' },
+                    { id: '__user_name__', title: 'User Name', type: 'system' },
+                    { id: '__board_name__', title: 'Board Name', type: 'system' },
+                    { id: '__group_name__', title: 'Group Name', type: 'system' },
                     ...boardColumns.filter((col) => !['file', 'subtasks'].includes(col.type))
                   ]
                     .filter((col) =>
@@ -1891,9 +2070,13 @@ export default function TemplateList({ boardId, sessionToken }) {
                       <div
                         key={col.id}
                         onClick={() => {
-                          const varName = col.id === '__item_name__'
-                            ? 'item_name'
-                            : col.title.toLowerCase().replace(/\s+/g, '_');
+                          const systemVars = {
+                            '__item_name__': 'item_name',
+                            '__user_name__': 'user_name',
+                            '__board_name__': 'board_name',
+                            '__group_name__': 'group_name',
+                          };
+                          const varName = systemVars[col.id] || col.title.toLowerCase().replace(/\s+/g, '_');
                           if (editorRef.current) {
                             editorRef.current.model.change(writer => {
                               writer.insertText(`{{${varName}}}`, editorRef.current.model.document.selection.getFirstPosition());
@@ -1931,7 +2114,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                 </div>
               </Box>
 
-              <Box style={{ padding: '24px 16px' }}>
+              <Box style={{ padding: '16px 16px', flexShrink: 0, maxHeight: 200, overflowY: 'auto', borderTop: '1px solid #E5E7EB' }}>
                 <Flex style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, cursor: 'pointer' }}>
                   <Heading style={{ fontSize: 14, margin: 0, fontWeight: 500, color: '#323338' }}>File columns as attachments</Heading>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -2037,11 +2220,14 @@ export default function TemplateList({ boardId, sessionToken }) {
           </Flex>
 
           {/* Footer */}
-          <Flex style={{ padding: '16px 24px', borderTop: '1px solid #E5E7EB', justifyContent: 'flex-end', backgroundColor: '#fff', alignItems: 'center' }}>
+          <div style={{ padding: '12px 24px', borderTop: '1px solid #E5E7EB', backgroundColor: '#fff', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            <Button kind="secondary" onClick={handleSendNow} disabled={sendingNow} style={{ minWidth: 100, padding: '8px 24px', fontSize: 14 }}>
+              {sendingNow ? 'Sending...' : 'Send Now'}
+            </Button>
             <Button kind="primary" onClick={handleSaveTemplate} style={{ minWidth: 80, padding: '8px 24px', fontSize: 14 }}>
               Save
             </Button>
-          </Flex>
+          </div>
 
           {/* Custom Table Menu */}
           {tableMenuConfig && (
