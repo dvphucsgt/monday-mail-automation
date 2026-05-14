@@ -34,7 +34,7 @@ export async function handleEmail(
 
 async function handleSendNow(request: Request, env: Env): Promise<Response> {
   const body = await request.json() as any;
-  const { board_id, to, cc, bcc, subject, body: templateBody, attachments } = body;
+  const { board_id, item_id, to, cc, bcc, subject, body: templateBody, attachments } = body;
 
   if (!board_id) {
     return errorResponse(new Error("board_id is required"), 400);
@@ -46,21 +46,6 @@ async function handleSendNow(request: Request, env: Env): Promise<Response> {
     return errorResponse(new Error("subject and body are required"), 400);
   }
 
-  // Build body with responsive styles
-  let styledBody = `
-    <style>
-      img { max-width: 100% !important; height: auto !important; }
-      body { font-family: Arial, sans-serif; line-height: 1.6; }
-    </style>
-    ${templateBody}
-  `;
-  styledBody = styledBody.replace(/<img[^>]+style="[^"]*width:\s*(\d+)px;?[^"]*"[^>]*>/g, (match, p1) => {
-    if (!match.includes('width=')) {
-      return match.replace('<img', `<img width="${p1}"`);
-    }
-    return match;
-  });
-
   // Prepare attachments
   const preparedAttachments = await prepareAttachments(env, JSON.stringify(attachments || []), { column_values: [] });
 
@@ -70,10 +55,26 @@ async function handleSendNow(request: Request, env: Env): Promise<Response> {
     ...(bcc || []).map((email: string) => ({ email, type: "bcc" })),
   ];
 
+  const sharedItemData = item_id ? await fetchItemData(env, String(item_id)) : null;
+  const boardItems = !sharedItemData && hasTemplateVariables(subject, templateBody)
+    ? await fetchBoardItemsForSendNow(env, String(board_id))
+    : [];
+
   const results = [];
   for (const r of allRecipients) {
     try {
-      await sendViaGmail(env, String(board_id), r.email, subject, styledBody, preparedAttachments);
+      const matchedItem = sharedItemData || findItemForRecipient(boardItems, r.email);
+      const resolvedSubject = matchedItem ? replaceVariables(subject, matchedItem) : subject;
+      const resolvedBody = matchedItem ? replaceVariables(templateBody, matchedItem) : templateBody;
+
+      await sendViaGmail(
+        env,
+        String(board_id),
+        r.email,
+        resolvedSubject,
+        buildStyledEmailBody(resolvedBody),
+        preparedAttachments,
+      );
       results.push({ email: r.email, type: r.type, status: "sent" });
     } catch (err: any) {
       results.push({ email: r.email, type: r.type, status: "failed", error: err.message });
@@ -148,41 +149,7 @@ async function sendEmailForItem(
   itemId: string,
   boardId: string,
 ): Promise<any> {
-  // 1. Fetch Item Data from Monday
-  const mondayQuery = `
-    query {
-      items(ids: [${itemId}]) {
-        id
-        name
-        creator { name }
-        board { name }
-        group { title }
-        column_values {
-          id
-          text
-          value
-          column {
-            title
-            type
-          }
-        }
-      }
-    }
-  `;
-
-  const mondayResponse = await fetch("https://api.monday.com/v2", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.MONDAY_API_KEY}`,
-    },
-    body: JSON.stringify({ query: mondayQuery }),
-  });
-
-  const mondayData = (await mondayResponse.json()) as any;
-  const itemData = mondayData.data?.items?.[0];
-
-  if (!itemData) throw new Error("Item not found on Monday");
+  const itemData = await fetchItemData(env, itemId);
 
   // 2. Resolve Recipients
   const recipients = extractRecipients(itemData);
@@ -192,28 +159,7 @@ async function sendEmailForItem(
 
   // 3. Prepare Content
   const subject = replaceVariables(subjectTemplate, itemData);
-  let body = replaceVariables(bodyTemplate, itemData);
-
-  body = `
-    <style>
-      img {
-        max-width: 100% !important;
-        height: auto !important;
-      }
-      body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-      }
-    </style>
-    ${body}
-  `;
-
-  body = body.replace(/<img[^>]+style="[^"]*width:\s*(\d+)px;?[^"]*"[^>]*>/g, (match, p1) => {
-    if (!match.includes('width=')) {
-      return match.replace('<img', `<img width="${p1}"`);
-    }
-    return match;
-  });
+  const body = buildStyledEmailBody(replaceVariables(bodyTemplate, itemData));
 
   const attachments = await prepareAttachments(env, attachmentsJson, itemData);
 
@@ -249,6 +195,7 @@ function extractRecipients(itemData: any): string[] {
 function replaceVariables(template: string, itemData: any): string {
   if (!template) return "";
   const vars: Record<string, string> = {
+    name: itemData.name || "",
     item_name: itemData.name || "",
     item_id: itemData.id || "",
     user_name: itemData.creator?.name || "",
@@ -271,6 +218,167 @@ function replaceVariables(template: string, itemData: any): string {
     const k = key.trim().toLowerCase().replace(/\s+/g, "_");
     return vars[k] !== undefined ? vars[k] : match;
   });
+}
+
+function hasTemplateVariables(...templates: Array<string | undefined>): boolean {
+  return templates.some((template) => /\{\{.+?\}\}/.test(template || ""));
+}
+
+function buildStyledEmailBody(body: string): string {
+  const styledBody = `
+    <style>
+      img { max-width: 100% !important; height: auto !important; }
+      body { font-family: Arial, sans-serif; line-height: 1.6; }
+    </style>
+    ${body}
+  `;
+
+  return styledBody.replace(/<img[^>]+style="[^"]*width:\s*(\d+)px;?[^"]*"[^>]*>/g, (match, p1) => {
+    if (!match.includes('width=')) {
+      return match.replace('<img', `<img width="${p1}"`);
+    }
+    return match;
+  });
+}
+
+async function fetchItemData(env: Env, itemId: string): Promise<any> {
+  const mondayData = await callMondayApi(env, `
+    query {
+      items(ids: [${itemId}]) {
+        id
+        name
+        creator { name }
+        board { name }
+        group { title }
+        column_values {
+          id
+          text
+          value
+          column {
+            title
+            type
+          }
+        }
+      }
+    }
+  `);
+
+  const itemData = mondayData.data?.items?.[0];
+  if (!itemData) {
+    throw new Error("Item not found on Monday");
+  }
+
+  return itemData;
+}
+
+async function fetchBoardItemsForSendNow(env: Env, boardId: string): Promise<any[]> {
+  const mondayData = await callMondayApi(env, `
+    query {
+      boards(ids: [${boardId}]) {
+        name
+        items_page(limit: 500) {
+          items {
+            id
+            name
+            creator { name }
+            group { title }
+            column_values {
+              id
+              text
+              value
+              column {
+                title
+                type
+              }
+            }
+          }
+        }
+      }
+    }
+  `);
+
+  const board = mondayData.data?.boards?.[0];
+  const boardName = board?.name || "";
+  const items = board?.items_page?.items || [];
+
+  return items.map((item: any) => ({
+    ...item,
+    board: item.board || { name: boardName },
+  }));
+}
+
+async function callMondayApi(env: Env, query: string): Promise<any> {
+  const mondayResponse = await fetch("https://api.monday.com/v2", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.MONDAY_API_KEY}`,
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  return await mondayResponse.json() as any;
+}
+
+function findItemForRecipient(items: any[], recipientEmail: string): any | null {
+  const normalizedRecipient = normalizeEmail(recipientEmail);
+  if (!normalizedRecipient) {
+    return null;
+  }
+
+  return items.find((item) =>
+    item.column_values?.some((cv: any) =>
+      extractEmailsFromColumnValue(cv).some((email) => email === normalizedRecipient),
+    ),
+  ) || null;
+}
+
+function extractEmailsFromColumnValue(cv: any): string[] {
+  const emails = new Set<string>();
+  const type = cv.column?.type;
+
+  if (type === "email") {
+    const textEmail = normalizeEmail(cv.text);
+    if (textEmail) {
+      emails.add(textEmail);
+    }
+
+    try {
+      const parsed = JSON.parse(cv.value || "{}");
+      const valueEmail = normalizeEmail(parsed.email || parsed.text);
+      if (valueEmail) {
+        emails.add(valueEmail);
+      }
+    } catch {
+      // Ignore malformed Monday email payloads and fall back to text.
+    }
+  }
+
+  if ((type === "people" || type === "multiple-person") && cv.value) {
+    try {
+      const parsed = JSON.parse(cv.value);
+      const people = Array.isArray(parsed?.personsOrTeams)
+        ? parsed.personsOrTeams
+        : Array.isArray(parsed?.personsAndTeams)
+          ? parsed.personsAndTeams
+          : [];
+
+      for (const person of people) {
+        const email = normalizeEmail(person?.email);
+        if (email) {
+          emails.add(email);
+        }
+      }
+    } catch {
+      // Ignore malformed Monday people payloads.
+    }
+  }
+
+  return [...emails];
+}
+
+function normalizeEmail(email: string | undefined): string {
+  return (email || "").trim().toLowerCase();
 }
 
 async function prepareAttachments(env: Env, configJson: string, itemData: any): Promise<any[]> {

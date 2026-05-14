@@ -2064,7 +2064,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                       { id: '__user_name__', title: 'User Name', type: 'system' },
                       { id: '__board_name__', title: 'Board Name', type: 'system' },
                       { id: '__group_name__', title: 'Group Name', type: 'system' },
-                      ...boardColumns.filter((col) => !['file', 'subtasks'].includes(col.type))
+                      ...boardColumns.filter((col) => !['file', 'subtasks', 'name'].includes(col.type))
                     ]
                       .filter((col) =>
                         !columnSearch || col.title.toLowerCase().includes(columnSearch.toLowerCase())
