@@ -43,7 +43,7 @@ export async function handleTemplates(
     }
 
     const body = await request.json();
-    const { name, subject, body: content, attachments } = body;
+    const { name, subject, body: content, attachments, created_user } = body;
 
     if (!name || !subject || !content) {
       return errorResponse(
@@ -54,11 +54,11 @@ export async function handleTemplates(
 
     const result = await env.DB.prepare(
       `
-      INSERT INTO templates (board_id, name, subject, body, attachments)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO templates (board_id, name, subject, body, attachments, created_user)
+      VALUES (?, ?, ?, ?, ?, ?)
     `,
     )
-      .bind(boardId, name, subject, content, JSON.stringify(attachments || []))
+      .bind(boardId, name, subject, content, JSON.stringify(attachments || []), created_user || null)
       .run();
 
     const template = (await env.DB.prepare(

@@ -30,6 +30,7 @@ export interface Template {
   subject: string;
   body: string;
   attachments: string;
+  created_user?: string;
   created_at: string;
   updated_at?: string;
 }

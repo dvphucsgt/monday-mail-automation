@@ -15,6 +15,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [sessionToken, setSessionToken] = useState(null)
+  const [currentUser, setCurrentUser] = useState(null)
   const location = useLocation()
 
   useEffect(() => {
@@ -42,6 +43,29 @@ function App() {
       setLoading(false)
     })
 
+    // Fetch current user info separately
+    mondaySDK.get("context").then(contextRes => {
+      const ctx = contextRes.data
+      if (!ctx) return
+      const userId = ctx.user?.id || ctx.user?.userId || ctx.userId
+      console.log('[App] Monday context:', ctx, 'extracted userId:', userId)
+      if (userId) {
+        mondaySDK.api(`
+          query {
+            users(ids: [${userId}]) {
+              id
+              name
+              photo_thumb
+            }
+          }
+        `).then(userRes => {
+          const user = userRes?.data?.users?.[0]
+          console.log('[App] Fetched user:', user)
+          if (user) setCurrentUser(user)
+        }).catch(err => console.error('Error fetching user:', err))
+      }
+    })
+
     // Value created for user
     mondaySDK.execute("valueCreatedForUser")
   }, [])
@@ -63,6 +87,7 @@ function App() {
     <AppContext.Provider
       value={{
         context,
+        currentUser,
         isAuthenticated,
         setIsAuthenticated
       }}

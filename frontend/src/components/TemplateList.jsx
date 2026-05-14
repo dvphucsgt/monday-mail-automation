@@ -75,6 +75,7 @@ export default function TemplateList({ boardId, sessionToken }) {
   const [ccRecipients, setCcRecipients] = useState([])
   const [bccRecipients, setBccRecipients] = useState([])
   const [boardEmails, setBoardEmails] = useState([])
+  const [userInfoMap, setUserInfoMap] = useState({})
   // Inject specific fix styles for CKEditor layout
   useEffect(() => {
     const styleId = 'ck-layout-fix-style';
@@ -451,10 +452,38 @@ export default function TemplateList({ boardId, sessionToken }) {
       )
       const result = await response.json()
       setTemplates(result.data?.templates || [])
+      // Fetch user info for template owners
+      const templates = result.data?.templates || []
+      const userIds = [...new Set(templates.map(t => t.created_user).filter(Boolean))]
+      if (userIds.length > 0) {
+        fetchUsersInfo(userIds)
+      }
     } catch (error) {
       console.error('Error fetching templates:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUsersInfo = async (userIds) => {
+    const missingIds = userIds.filter(id => !userInfoMap[id])
+    if (missingIds.length === 0) return
+    try {
+      const res = await monday.api(`
+        query {
+          users(ids: [${missingIds.join(',')}]) {
+            id
+            name
+            photo_thumb
+          }
+        }
+      `)
+      const users = res?.data?.users || []
+      const newMap = {}
+      users.forEach(u => { newMap[u.id] = u })
+      setUserInfoMap(prev => ({ ...prev, ...newMap }))
+    } catch (err) {
+      console.error('Error fetching users info:', err)
     }
   }
 
@@ -532,7 +561,8 @@ export default function TemplateList({ boardId, sessionToken }) {
 
       const payload = {
         ...formData,
-        attachments: sanitizedAttachments
+        attachments: sanitizedAttachments,
+        ...(editingTemplateId ? {} : { created_user: currentUser?.id })
       };
 
       const response = await fetch(
@@ -931,12 +961,17 @@ export default function TemplateList({ boardId, sessionToken }) {
                           </Box>
                         </td>
                         <td style={{ padding: '16px 24px' }}>
-                          <Tooltip content="Template Owner">
+                          <Tooltip content={userInfoMap[template.created_user]?.name || "Template Owner"}>
                             <Avatar
                               size={Avatar.sizes.SMALL}
-                              type={Avatar.types.ICON}
-                              icon={() => (
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                              type={userInfoMap[template.created_user]?.photo_thumb ? Avatar.types.IMG : Avatar.types.ICON}
+                              {...(userInfoMap[template.created_user]?.photo_thumb
+                                ? { src: userInfoMap[template.created_user].photo_thumb }
+                                : {
+                                    icon: () => (
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    )
+                                  }
                               )}
                               backgroundColor={Avatar.colors.DONE_GREEN}
                             />
@@ -1045,12 +1080,17 @@ export default function TemplateList({ boardId, sessionToken }) {
                   <div style={{ width: 16, height: 16, backgroundColor: '#fff', borderRadius: '50%', position: 'absolute', right: 2, top: 2 }}></div>
                 </div>
               </Flex>
-              <Tooltip content="Template owner">
+              <Tooltip content={currentUser?.name || "Template owner"}>
                 <Avatar
                   size={Avatar.sizes.SMALL}
-                  type={Avatar.types.ICON}
-                  icon={() => (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  type={currentUser?.photo_thumb ? Avatar.types.IMG : Avatar.types.ICON}
+                  {...(currentUser?.photo_thumb
+                    ? { src: currentUser.photo_thumb }
+                    : {
+                        icon: () => (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        )
+                      }
                   )}
                   backgroundColor={Avatar.colors.DONE_GREEN}
                 />
