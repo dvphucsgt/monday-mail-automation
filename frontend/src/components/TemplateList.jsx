@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import mondaySdk from 'monday-sdk-js'
 import { Heading, Text } from '@vibe/typography'
 import { Flex, Box } from '@vibe/layout'
-import { EmptyState, Modal, ModalHeader, Avatar, Tooltip } from '@vibe/core'
+import { EmptyState, Modal, ModalHeader, Avatar, Tooltip, Toast } from '@vibe/core'
 import { CKEditor } from '@ckeditor/ckeditor5-react'
 import { ClassicEditor, Bold, Italic, Underline, Strikethrough, Font, FontSize, Alignment, List, Link, Table, TableToolbar, Image, ImageUpload, ImageInsert, ImageResize, ImageStyle, ImageToolbar, ImageCaption, ImageBlock, ImageInline, Base64UploadAdapter, Undo, Essentials, Paragraph, BlockQuote, Indent, Heading as CKHeading } from 'ckeditor5'
 import 'ckeditor5/ckeditor5.css'
@@ -10,7 +11,6 @@ import AppContext from '../utils/AppContext'
 import LoginModal from './LoginModal'
 import { BASE_API_URL } from '../utils/constants'
 import TemplateSkeleton from './TemplateSkeleton'
-import { useToast } from '../utils/useToast.jsx'
 import EmailRecipientField from './EmailRecipientField'
 
 const Button = ({ children, kind = 'primary', size = 'medium', onClick, style = {}, ...props }) => {
@@ -61,7 +61,8 @@ const monday = mondaySdk()
 
 export default function TemplateList({ boardId, sessionToken }) {
   const { currentUser } = React.useContext(AppContext)
-  const toast = useToast()
+  const [toastState, setToastState] = useState({ open: false, type: 'normal', message: '' })
+  const [confirmState, setConfirmState] = useState({ open: false, loading: false })
   const editorRef = React.useRef(null)
   const [boardColumns, setBoardColumns] = useState([])
   const [boardAssets, setBoardAssets] = useState([])
@@ -81,6 +82,7 @@ export default function TemplateList({ boardId, sessionToken }) {
       const style = document.createElement('style');
       style.id = styleId;
       style.innerHTML = `
+        @keyframes spin { to { transform: rotate(360deg) } }
         /* List Fix - Refined */
         .ck-content ul, .ck-content ol {
           list-style-position: outside !important;
@@ -258,7 +260,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                   emailSet.add(p.email.trim().toLowerCase())
                 }
               }
-            } catch {}
+            } catch { }
           }
         }
       }
@@ -571,36 +573,37 @@ export default function TemplateList({ boardId, sessionToken }) {
       return
     }
 
-    toast.confirm('Send this email now?', {
-      onOk: async () => {
-        setSendingNow(true)
-        try {
-          const resp = await fetch(`${BASE_API_URL}/email/send-now`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              board_id: boardId,
-              to: toRecipients,
-              cc: ccRecipients,
-              bcc: bccRecipients,
-              subject: formData.subject,
-              body: formData.body,
-              attachments: formData.attachments || [],
-            }),
-          })
-          const data = await resp.json()
-          if (data.success) {
-            toast.success(`Email sent to ${toRecipients.length} recipient${toRecipients.length > 1 ? 's' : ''}`)
-          } else {
-            toast.error(data.data?.results?.[0]?.error || 'Failed to send email')
-          }
-        } catch (err) {
-          toast.error('Failed to send email: ' + err.message)
-        }
-        setSendingNow(false)
-      },
-      onCancel: () => {},
-    })
+    setConfirmState({ open: true, loading: false })
+  }
+
+  const doSendNow = async () => {
+    setConfirmState(s => ({ ...s, loading: true }))
+    setSendingNow(true)
+    try {
+      const resp = await fetch(`${BASE_API_URL}/email/send-now`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board_id: boardId,
+          to: toRecipients,
+          cc: ccRecipients,
+          bcc: bccRecipients,
+          subject: formData.subject,
+          body: formData.body,
+          attachments: formData.attachments || [],
+        }),
+      })
+      const data = await resp.json()
+      if (data.success) {
+        setToastState({ open: true, type: 'positive', message: `Email sent to ${toRecipients.length} recipient${toRecipients.length > 1 ? 's' : ''}` })
+      } else {
+        setToastState({ open: true, type: 'negative', message: data.data?.results?.[0]?.error || 'Failed to send email' })
+      }
+    } catch (err) {
+      setToastState({ open: true, type: 'negative', message: 'Failed to send email: ' + err.message })
+    }
+    setSendingNow(false)
+    setConfirmState({ open: false, loading: false })
   }
 
   const handleLinkClick = () => {
@@ -1068,7 +1071,7 @@ export default function TemplateList({ boardId, sessionToken }) {
             <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
               {/* From Row */}
-              <Flex style={{ padding: '12px 24px', borderBottom: '1px solid #E5E7EB', alignItems: 'center', gap: 12 }}>
+              <Flex style={{ padding: '12px 24px', borderBottom: '1px solid #E5E7EB', alignItems: 'center' }}>
                 <Text style={{ fontSize: 14, color: '#6E7278', width: 50, fontWeight: 500 }}>From</Text>
                 <div ref={accountDropdownRef} style={{ position: 'relative' }}>
                   <Flex
@@ -1190,54 +1193,54 @@ export default function TemplateList({ boardId, sessionToken }) {
 
               {/* Recipient Rows (To / CC / BCC) — hidden by default, shown on trigger */}
               {showRecipients && (
-              <div style={{ borderBottom: '1px solid #E5E7EB' }}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '0 24px', paddingRight: 0 }}>
-                  <EmailRecipientField
-                    label="To"
-                    recipients={toRecipients}
-                    suggestions={boardEmails}
-                    onChange={emails => { setToRecipients(emails); if (toError) setToError('') }}
-                    error={toError}
-                    placeholder="Recipients"
-                  />
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingRight: 16, flexShrink: 0, height: 44 }}>
-                    <span
-                      style={{ fontSize: 13, color: '#0073ea', cursor: 'pointer', fontWeight: 500, userSelect: 'none' }}
-                      onClick={() => setShowCc(!showCc)}
-                    >
-                      Cc
-                    </span>
-                    <span
-                      style={{ fontSize: 13, color: '#0073ea', cursor: 'pointer', fontWeight: 500, userSelect: 'none' }}
-                      onClick={() => setShowBcc(!showBcc)}
-                    >
-                      Bcc
-                    </span>
+                <div style={{ borderBottom: '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '0 24px', paddingRight: 0 }}>
+                    <EmailRecipientField
+                      label="To"
+                      recipients={toRecipients}
+                      suggestions={boardEmails}
+                      onChange={emails => { setToRecipients(emails); if (toError) setToError('') }}
+                      error={toError}
+                      placeholder="Recipients"
+                    />
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingRight: 16, flexShrink: 0, width: '7%', height: 44 }}>
+                      <span
+                        style={{ fontSize: 13, color: '#0073ea', cursor: 'pointer', fontWeight: 500, userSelect: 'none' }}
+                        onClick={() => setShowCc(!showCc)}
+                      >
+                        Cc
+                      </span>
+                      <span
+                        style={{ fontSize: 13, color: '#0073ea', cursor: 'pointer', fontWeight: 500, userSelect: 'none' }}
+                        onClick={() => setShowBcc(!showBcc)}
+                      >
+                        Bcc
+                      </span>
+                    </div>
                   </div>
+                  {showCc && (
+                    <div style={{ borderTop: '1px solid #F0F1F3', padding: '0 24px' }}>
+                      <EmailRecipientField
+                        label="Cc"
+                        recipients={ccRecipients}
+                        suggestions={boardEmails}
+                        onChange={setCcRecipients}
+                        placeholder="Carbon copy"
+                      />
+                    </div>
+                  )}
+                  {showBcc && (
+                    <div style={{ borderTop: '1px solid #F0F1F3', padding: '0 24px' }}>
+                      <EmailRecipientField
+                        label="Bcc"
+                        recipients={bccRecipients}
+                        suggestions={boardEmails}
+                        onChange={setBccRecipients}
+                        placeholder="Blind carbon copy"
+                      />
+                    </div>
+                  )}
                 </div>
-                {showCc && (
-                  <div style={{ borderTop: '1px solid #F0F1F3', padding: '0 24px' }}>
-                    <EmailRecipientField
-                      label="Cc"
-                      recipients={ccRecipients}
-                      suggestions={boardEmails}
-                      onChange={setCcRecipients}
-                      placeholder="Carbon copy"
-                    />
-                  </div>
-                )}
-                {showBcc && (
-                  <div style={{ borderTop: '1px solid #F0F1F3', padding: '0 24px' }}>
-                    <EmailRecipientField
-                      label="Bcc"
-                      recipients={bccRecipients}
-                      suggestions={boardEmails}
-                      onChange={setBccRecipients}
-                      placeholder="Blind carbon copy"
-                    />
-                  </div>
-                )}
-              </div>
               )}
 
               {/* Subject Row */}
@@ -2055,62 +2058,62 @@ export default function TemplateList({ boardId, sessionToken }) {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-                <Flex style={{ flexWrap: 'wrap', gap: 8 }}>
-                  {[
-                    { id: '__item_name__', title: 'Item Name', type: 'system' },
-                    { id: '__user_name__', title: 'User Name', type: 'system' },
-                    { id: '__board_name__', title: 'Board Name', type: 'system' },
-                    { id: '__group_name__', title: 'Group Name', type: 'system' },
-                    ...boardColumns.filter((col) => !['file', 'subtasks'].includes(col.type))
-                  ]
-                    .filter((col) =>
-                      !columnSearch || col.title.toLowerCase().includes(columnSearch.toLowerCase())
-                    )
-                    .map((col) => (
-                      <div
-                        key={col.id}
-                        onClick={() => {
-                          const systemVars = {
-                            '__item_name__': 'item_name',
-                            '__user_name__': 'user_name',
-                            '__board_name__': 'board_name',
-                            '__group_name__': 'group_name',
-                          };
-                          const varName = systemVars[col.id] || col.title.toLowerCase().replace(/\s+/g, '_');
-                          if (editorRef.current) {
-                            editorRef.current.model.change(writer => {
-                              writer.insertText(`{{${varName}}}`, editorRef.current.model.document.selection.getFirstPosition());
-                            });
-                          } else {
-                            setFormData({ ...formData, body: formData.body + `{{${varName}}}` })
-                          }
-                        }}
-                        style={{
-                          padding: '6px 12px',
-                          border: '1px solid #d0e8ff',
-                          borderRadius: 4,
-                          fontSize: 13,
-                          color: '#0073ea',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          backgroundColor: '#f0f7ff',
-                          transition: 'all 0.2s',
-                          fontWeight: 500
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = '#d0e8ff';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f0f7ff';
-                        }}
-                      >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" /></svg>
-                        {col.title}
-                      </div>
-                    ))}
-                </Flex>
+                  <Flex style={{ flexWrap: 'wrap', gap: 8 }}>
+                    {[
+                      { id: '__item_name__', title: 'Item Name', type: 'system' },
+                      { id: '__user_name__', title: 'User Name', type: 'system' },
+                      { id: '__board_name__', title: 'Board Name', type: 'system' },
+                      { id: '__group_name__', title: 'Group Name', type: 'system' },
+                      ...boardColumns.filter((col) => !['file', 'subtasks'].includes(col.type))
+                    ]
+                      .filter((col) =>
+                        !columnSearch || col.title.toLowerCase().includes(columnSearch.toLowerCase())
+                      )
+                      .map((col) => (
+                        <div
+                          key={col.id}
+                          onClick={() => {
+                            const systemVars = {
+                              '__item_name__': 'item_name',
+                              '__user_name__': 'user_name',
+                              '__board_name__': 'board_name',
+                              '__group_name__': 'group_name',
+                            };
+                            const varName = systemVars[col.id] || col.title.toLowerCase().replace(/\s+/g, '_');
+                            if (editorRef.current) {
+                              editorRef.current.model.change(writer => {
+                                writer.insertText(`{{${varName}}}`, editorRef.current.model.document.selection.getFirstPosition());
+                              });
+                            } else {
+                              setFormData({ ...formData, body: formData.body + `{{${varName}}}` })
+                            }
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            border: '1px solid #d0e8ff',
+                            borderRadius: 4,
+                            fontSize: 13,
+                            color: '#0073ea',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            backgroundColor: '#f0f7ff',
+                            transition: 'all 0.2s',
+                            fontWeight: 500
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#d0e8ff';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f0f7ff';
+                          }}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" /></svg>
+                          {col.title}
+                        </div>
+                      ))}
+                  </Flex>
                 </div>
               </Box>
 
@@ -2342,6 +2345,70 @@ export default function TemplateList({ boardId, sessionToken }) {
           fetchAuthStatus()
         }}
       />
+      <Modal
+        show={confirmState.open}
+        onClose={() => setConfirmState({ open: false, loading: false })}
+        showCloseButton={false}
+        contentWidth={400}
+      >
+        <ModalHeader title="Send mail" style={{ fontSize: 18 }} />
+        <div style={{ padding: '8px 0' }}>
+          <Text style={{ fontSize: 16, color: '#1f2024', display: 'block', lineHeight: '20px', marginBottom: 24 }}>
+            Are you sure you want to send this mail now?
+          </Text>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <button
+              onClick={() => setConfirmState({ open: false, loading: false })}
+              disabled={confirmState.loading}
+              style={{
+                padding: '6px 20px',
+                borderRadius: 6,
+                border: '1px solid #d0d1d5',
+                background: '#fff',
+                cursor: confirmState.loading ? 'not-allowed' : 'pointer',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#323338',
+                opacity: confirmState.loading ? 0.5 : 1,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={doSendNow}
+              disabled={confirmState.loading}
+              style={{
+                padding: '6px 20px',
+                borderRadius: 6,
+                border: 'none',
+                background: confirmState.loading ? '#0073ea99' : '#0073ea',
+                color: '#fff',
+                cursor: confirmState.loading ? 'wait' : 'pointer',
+                fontSize: 14,
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {confirmState.loading && (
+                <svg width="14" height="14" viewBox="0 0 24 24" style={{ animation: 'spin 0.8s linear infinite' }}>
+                  <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="3" fill="none" strokeDasharray="31.4" strokeDashoffset="10" />
+                </svg>
+              )}
+              Send
+            </button>
+          </div>
+        </div>
+      </Modal>
+      <Toast
+        open={toastState.open}
+        type={toastState.type}
+        onClose={() => setToastState(s => ({ ...s, open: false }))}
+        autoHideDuration={4000}
+      >
+        {toastState.message}
+      </Toast>
     </Box>
   )
 }

@@ -18,8 +18,8 @@ export default function EmailRecipientField({
 
   const filtered = inputValue.trim()
     ? suggestions.filter(
-        s => s.toLowerCase().includes(inputValue.toLowerCase()) && !recipients.includes(s),
-      )
+      s => s.toLowerCase().includes(inputValue.toLowerCase()) && !recipients.includes(s),
+    )
     : suggestions.filter(s => !recipients.includes(s))
 
   useEffect(() => {
@@ -126,15 +126,14 @@ export default function EmailRecipientField({
   }
 
   return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '93%' }}>
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          padding: '4px 24px',
           minHeight: error ? 60 : 44,
           flexWrap: 'wrap',
-          gap: 4,
+          gap: 12,
           borderBottom: error ? 'none' : undefined,
         }}
       >
