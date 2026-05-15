@@ -194,6 +194,9 @@ function extractRecipients(itemData: any): string[] {
 
 function replaceVariables(template: string, itemData: any): string {
   if (!template) return "";
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const now = new Date();
+  const dateStr = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
   const vars: Record<string, string> = {
     name: itemData.name || "",
     item_name: itemData.name || "",
@@ -201,18 +204,25 @@ function replaceVariables(template: string, itemData: any): string {
     user_name: itemData.creator?.name || "",
     board_name: itemData.board?.name || "",
     group_name: itemData.group?.title || "",
+    date: dateStr,
   };
 
   for (const cv of itemData.column_values) {
     const val = cv.text || "";
     vars[cv.id] = val;
     if (cv.column?.title) {
-      vars[cv.column.title.toLowerCase().replace(/\s+/g, "_")] = val;
+      const colKey = cv.column.title.toLowerCase().replace(/\s+/g, "_");
+      if (colKey !== "date") {
+        vars[colKey] = val;
+      }
     }
     if (cv.column?.type === "people" || cv.column?.type === "multiple-person") {
        vars["user_name"] = val;
     }
   }
+
+  // Ensure {{date}} always resolves to current date
+  vars["date"] = dateStr;
 
   return template.replace(/\{\{(.+?)\}\}/g, (match, key) => {
     const k = key.trim().toLowerCase().replace(/\s+/g, "_");

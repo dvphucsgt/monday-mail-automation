@@ -639,7 +639,6 @@ export default function TemplateList({ boardId, sessionToken }) {
     }
   }
 
-  const notify = () => toast("Wow so easy!");
   const handleLinkClick = () => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -2288,7 +2287,6 @@ export default function TemplateList({ boardId, sessionToken }) {
 
           {/* Footer */}
           <div style={{ padding: '12px 24px', borderTop: '1px solid #E5E7EB', backgroundColor: '#fff', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-            <button onClick={notify}>Notify!</button>
             <Button kind="secondary" onClick={handleSendNow} disabled={sendingNow} style={{ minWidth: 100, padding: '8px 24px', fontSize: 14 }}>
               {sendingNow ? 'Sending...' : 'Send Now'}
             </Button>
