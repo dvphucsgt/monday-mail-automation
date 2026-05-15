@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import mondaySdk from 'monday-sdk-js'
+import { toast } from 'react-toastify'
 import { Heading, Text } from '@vibe/typography'
 import { Flex, Box } from '@vibe/layout'
-import { EmptyState, Modal, ModalHeader, Avatar, Tooltip, Toast } from '@vibe/core'
+import { EmptyState, Modal, ModalHeader, Avatar, Tooltip } from '@vibe/core'
 import { CKEditor } from '@ckeditor/ckeditor5-react'
 import { ClassicEditor, Bold, Italic, Underline, Strikethrough, Font, FontSize, Alignment, List, Link, Table, TableToolbar, Image, ImageUpload, ImageInsert, ImageResize, ImageStyle, ImageToolbar, ImageCaption, ImageBlock, ImageInline, Base64UploadAdapter, Undo, Essentials, Paragraph, BlockQuote, Indent, Heading as CKHeading } from 'ckeditor5'
 import 'ckeditor5/ckeditor5.css'
@@ -61,7 +61,6 @@ const monday = mondaySdk()
 
 export default function TemplateList({ boardId, sessionToken }) {
   const { currentUser } = React.useContext(AppContext)
-  const [toastState, setToastState] = useState({ open: false, type: 'normal', message: '' })
   const [confirmState, setConfirmState] = useState({ open: false, loading: false })
   const editorRef = React.useRef(null)
   const [boardColumns, setBoardColumns] = useState([])
@@ -624,18 +623,23 @@ export default function TemplateList({ boardId, sessionToken }) {
         }),
       })
       const data = await resp.json()
+      setSendingNow(false)
+      setConfirmState({ open: false, loading: false })
       if (data.success) {
-        setToastState({ open: true, type: 'positive', message: `Email sent to ${toRecipients.length} recipient${toRecipients.length > 1 ? 's' : ''}` })
+        console.log("success");
+        toast.success(`Email sent to ${toRecipients.length} recipient${toRecipients.length > 1 ? 's' : ''}`);
       } else {
-        setToastState({ open: true, type: 'negative', message: data.data?.results?.[0]?.error || 'Failed to send email' })
+        console.log("error");
+        toast.error(data.data?.results?.[0]?.error || 'Failed to send email')
       }
     } catch (err) {
-      setToastState({ open: true, type: 'negative', message: 'Failed to send email: ' + err.message })
+      setSendingNow(false)
+      setConfirmState({ open: false, loading: false })
+      toast.error('Failed to send email: ' + err.message)
     }
-    setSendingNow(false)
-    setConfirmState({ open: false, loading: false })
   }
 
+  const notify = () => toast("Wow so easy!");
   const handleLinkClick = () => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -968,10 +972,10 @@ export default function TemplateList({ boardId, sessionToken }) {
                               {...(userInfoMap[template.created_user]?.photo_thumb
                                 ? { src: userInfoMap[template.created_user].photo_thumb }
                                 : {
-                                    icon: () => (
-                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                    )
-                                  }
+                                  icon: () => (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                  )
+                                }
                               )}
                               backgroundColor={Avatar.colors.DONE_GREEN}
                             />
@@ -1087,10 +1091,10 @@ export default function TemplateList({ boardId, sessionToken }) {
                   {...(currentUser?.photo_thumb
                     ? { src: currentUser.photo_thumb }
                     : {
-                        icon: () => (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        )
-                      }
+                      icon: () => (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      )
+                    }
                   )}
                   backgroundColor={Avatar.colors.DONE_GREEN}
                 />
@@ -2284,6 +2288,7 @@ export default function TemplateList({ boardId, sessionToken }) {
 
           {/* Footer */}
           <div style={{ padding: '12px 24px', borderTop: '1px solid #E5E7EB', backgroundColor: '#fff', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            <button onClick={notify}>Notify!</button>
             <Button kind="secondary" onClick={handleSendNow} disabled={sendingNow} style={{ minWidth: 100, padding: '8px 24px', fontSize: 14 }}>
               {sendingNow ? 'Sending...' : 'Send Now'}
             </Button>
@@ -2461,14 +2466,6 @@ export default function TemplateList({ boardId, sessionToken }) {
           </div>
         </div>
       </Modal>
-      <Toast
-        open={toastState.open}
-        type={toastState.type}
-        onClose={() => setToastState(s => ({ ...s, open: false }))}
-        autoHideDuration={4000}
-      >
-        {toastState.message}
-      </Toast>
     </Box>
   )
 }

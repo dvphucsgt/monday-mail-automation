@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import mondaySdk from "monday-sdk-js";
+import { ToastContainer, Bounce } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AppContext from './utils/AppContext.jsx'
 import AuthPage from './pages/AuthPage.jsx'
@@ -110,6 +112,18 @@ function App() {
           <Route path="/" element={<Navigate to={`/templates${location.search}`} replace />} />
         </Routes>
       </Layout>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeButton={false}
+        pauseOnHover
+        draggable
+        progress={undefined}
+        theme={"light"}
+        transition={Bounce}
+        style={{ zIndex: 999999999 }}
+      />
     </AppContext.Provider>
   )
 }
