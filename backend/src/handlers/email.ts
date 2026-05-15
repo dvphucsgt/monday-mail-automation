@@ -225,20 +225,41 @@ function hasTemplateVariables(...templates: Array<string | undefined>): boolean 
 }
 
 function buildStyledEmailBody(body: string): string {
-  const styledBody = `
-    <style>
-      img { max-width: 100% !important; height: auto !important; }
-      body { font-family: Arial, sans-serif; line-height: 1.6; }
-    </style>
-    ${body}
-  `;
+  // Process images: extract width from inline style and set as attributes
+  // so email clients (Gmail, Outlook) respect the resized dimensions
+  const processedBody = body.replace(/<img([^>]*?)>/gi, (match, attrs) => {
+    // Extract width from style attribute
+    const styleMatch = attrs.match(/style="[^"]*width:\s*(\d+)px[^"]*"/i);
+    const width = styleMatch ? styleMatch[1] : null;
 
-  return styledBody.replace(/<img[^>]+style="[^"]*width:\s*(\d+)px;?[^"]*"[^>]*>/g, (match, p1) => {
-    if (!match.includes('width=')) {
-      return match.replace('<img', `<img width="${p1}"`);
+    // Extract height from style attribute
+    const heightMatch = attrs.match(/style="[^"]*height:\s*(\d+)px[^"]*"/i);
+    const height = heightMatch ? heightMatch[1] : null;
+
+    let newAttrs = attrs;
+
+    // Add width attribute if not already present
+    if (width && !/\bwidth\s*=/i.test(attrs)) {
+      newAttrs += ` width="${width}"`;
     }
-    return match;
+    // Add height attribute if not already present
+    if (height && !/\bheight\s*=/i.test(attrs)) {
+      newAttrs += ` height="${height}"`;
+    }
+
+    return `<img${newAttrs}>`;
   });
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    img { max-width: 100% !important; height: auto !important; }
+    body { font-family: Arial, sans-serif; line-height: 1.6; }
+  </style>
+</head>
+<body>${processedBody}</body>
+</html>`;
 }
 
 async function fetchItemData(env: Env, itemId: string): Promise<any> {

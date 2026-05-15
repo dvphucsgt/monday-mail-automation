@@ -2007,10 +2007,30 @@ export default function TemplateList({ boardId, sessionToken }) {
                         Image, ImageUpload, ImageInsert, ImageResize, ImageStyle, ImageToolbar, ImageCaption, ImageBlock, ImageInline, Base64UploadAdapter, Undo, BlockQuote, Indent, CKHeading
                       ],
                       image: {
+                        resizeUnit: 'px',
+                        resizeOptions: [
+                          {
+                            name: 'resizeImage:original',
+                            value: null,
+                            icon: 'original'
+                          },
+                          {
+                            name: 'resizeImage:50',
+                            value: '50px',
+                            icon: 'medium'
+                          },
+                          {
+                            name: 'resizeImage:75',
+                            value: '75px',
+                            icon: 'large'
+                          }
+                        ],
                         toolbar: [
                           'imageStyle:inline',
                           'imageStyle:block',
                           'imageStyle:side',
+                          '|',
+                          'resizeImage',
                           '|',
                           'toggleImageCaption',
                           'imageTextAlternative'
