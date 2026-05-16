@@ -3,6 +3,7 @@ import { handleTemplates } from "./handlers/templates";
 import { handleIntegrations } from "./handlers/integrations";
 import { handleEmail } from "./handlers/email";
 import { handleWebhook } from "./handlers/webhook";
+import { handleStats } from "./handlers/stats";
 import { jsonResponse, errorResponse } from "./utils/response";
 import type { Env } from "./utils/types";
 
@@ -52,6 +53,11 @@ export default {
 
       if (path === "/webhook") {
         const response = await handleWebhook(request, env);
+        return withCors(response, corsHeaders);
+      }
+
+      if (path === "/stats" || path.startsWith("/stats/")) {
+        const response = await handleStats(request, env, url);
         return withCors(response, corsHeaders);
       }
 
@@ -134,3 +140,4 @@ export { handleTemplates } from "./handlers/templates";
 export { handleIntegrations } from "./handlers/integrations";
 export { handleEmail } from "./handlers/email";
 export { handleWebhook } from "./handlers/webhook";
+export { handleStats } from "./handlers/stats";
