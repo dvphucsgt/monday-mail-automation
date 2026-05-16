@@ -198,3 +198,28 @@
   background: #d83a52;
   color: white;
 }
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .integration-page {
+    padding: 16px !important;
+  }
+  .integration-recipes {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .recipe-card {
+    padding: 16px;
+  }
+  .active-integration-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+  }
+  .integration-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+

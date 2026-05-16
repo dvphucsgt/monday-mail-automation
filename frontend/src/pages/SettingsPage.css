@@ -95,3 +95,23 @@
 .notification-item span {
   color: #323338;
 }
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .settings-page {
+    padding: 16px !important;
+  }
+  .settings-section {
+    padding: 16px !important;
+  }
+  .account-item,
+  .board-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .btn-disconnect {
+    width: 100%;
+  }
+}
+

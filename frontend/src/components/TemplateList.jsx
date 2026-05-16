@@ -790,17 +790,17 @@ export default function TemplateList({ boardId, sessionToken }) {
   };
 
   return (
-    <Box style={{
-      padding: '40px 60px',
+    <div className="template-list-wrapper" style={{
+      padding: 'clamp(16px, 4vw, 40px) clamp(16px, 6vw, 60px)',
       maxWidth: '1240px',
       margin: '0 auto',
       minHeight: '100vh',
       width: '100%',
     }}>
-      <Box style={{
+      <div className="template-list-header-box" style={{
         background: 'linear-gradient(135deg, #ffffff 0%, #f4f7ff 100%)',
         borderRadius: '24px',
-        padding: '24px 32px',
+        padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 32px)',
         border: '1px solid #eef2f6',
         boxShadow: '0 4px 24px -2px rgba(0, 0, 0, 0.03)',
         marginBottom: '24px',
@@ -818,10 +818,10 @@ export default function TemplateList({ boardId, sessionToken }) {
           borderRadius: '50%'
         }} />
 
-        <Flex style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
+        <div className="template-list-header-flex" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ flex: '1 1 300px' }}>
             <Heading style={{
-              fontSize: 28,
+              fontSize: 'clamp(20px, 5vw, 28px)',
               fontWeight: 800,
               color: '#1a1b23',
               fontFamily: 'Outfit, sans-serif',
@@ -830,39 +830,43 @@ export default function TemplateList({ boardId, sessionToken }) {
             }}>
               Email Templates
             </Heading>
-            <Flex style={{ alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: loading ? '#f6b93b' : '#00c875', boxShadow: loading ? '0 0 10px rgba(246,185,59,0.3)' : '0 0 10px rgba(0,200,117,0.3)' }} />
-              <Text style={{
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: loading ? '#f6b93b' : '#00c875', boxShadow: loading ? '0 0 10px rgba(246,185,59,0.3)' : '0 0 10px rgba(0,200,117,0.3)', flexShrink: 0 }} />
+              <span style={{
                 color: '#676879',
-                fontSize: 15,
+                fontSize: 'clamp(13px, 3vw, 15px)',
                 fontWeight: 500,
-                fontFamily: 'Inter, sans-serif'
+                whiteSpace: 'normal',
+                lineHeight: 1.4
               }}>
                 {loading ? 'Fetching your templates...' : `${templates.length} ${templates.length === 1 ? 'template' : 'templates'} ready for your campaigns`}
-              </Text>
-            </Flex>
-          </Box>
+              </span>
+            </div>
+          </div>
           <Button
+            className="create-template-btn"
             kind="primary"
             onClick={handleCreateTemplate}
             style={{
-              padding: '14px 18px',
+              padding: 'clamp(10px, 2vw, 14px) clamp(15px, 3vw, 18px)',
               height: 'auto',
               borderRadius: '14px',
               fontWeight: 700,
               fontSize: '15px',
               boxShadow: '0 8px 20px -4px rgba(0, 115, 234, 0.3)',
-              border: 'none'
+              border: 'none',
+              whiteSpace: 'nowrap',
+              flexShrink: 0
             }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Create Template
           </Button>
-        </Flex>
-      </Box>
+        </div>
+      </div>
 
       {!loading && templates.length === 0 ? (
-        <Box style={{ marginTop: '40px' }}>
+        <div style={{ marginTop: '40px' }}>
           <EmptyState
             title="No templates yet"
             description="Create your first email template to get started"
@@ -875,7 +879,7 @@ export default function TemplateList({ boardId, sessionToken }) {
               </svg>
             )}
           />
-        </Box>
+        </div>
       ) : (
         <div style={{
           backgroundColor: 'white',
@@ -885,7 +889,7 @@ export default function TemplateList({ boardId, sessionToken }) {
           border: '1px solid #e5e7eb'
         }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto', minWidth: '800px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #e5e7eb' }}>
                   <th style={{ padding: '16px 24px', textAlign: 'left', color: '#676879', fontSize: '13px', fontWeight: 600, width: '18%' }}>NAME</th>
@@ -951,7 +955,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                           </div>
                         </td>
                         <td style={{ padding: '16px 24px' }}>
-                          <Box style={{
+                          <div style={{
                             display: 'inline-block',
                             padding: '2px 8px',
                             backgroundColor: '#e8f4fd',
@@ -961,7 +965,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                             fontWeight: 600
                           }}>
                             Email
-                          </Box>
+                          </div>
                         </td>
                         <td style={{ padding: '16px 24px' }}>
                           <Tooltip content={userInfoMap[template.created_user]?.name || "Template Owner"}>
@@ -986,7 +990,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                           </Text>
                         </td>
                         <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                          <Flex style={{ justifyContent: 'flex-end', gap: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                             <div
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1009,7 +1013,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                             >
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </div>
-                          </Flex>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1049,7 +1053,7 @@ export default function TemplateList({ boardId, sessionToken }) {
           }
         `}</style>
         <ModalHeader title="Hidden" className="hidden-vibe-header" />
-        <Box style={{
+        <div style={{
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
@@ -1059,7 +1063,7 @@ export default function TemplateList({ boardId, sessionToken }) {
           overflow: 'hidden'
         }}>
           {/* Header */}
-          <Flex style={{ padding: '16px 24px', borderBottom: '1px solid #E5E7EB', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <div className="flex-row-responsive" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', padding: '16px 24px', borderBottom: '1px solid #E5E7EB', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -1072,17 +1076,19 @@ export default function TemplateList({ boardId, sessionToken }) {
                 outline: 'none',
                 padding: '4px 0',
                 backgroundColor: 'transparent',
-                width: '300px'
+                width: '100%',
+                maxWidth: '400px',
+                flex: '1 1 200px'
               }}
               placeholder="Enter template name..."
             />
-            <Flex style={{ gap: 16, alignItems: 'center' }}>
-              <Flex style={{ gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <Text style={{ fontSize: 14, color: '#323338' }}>Create update:</Text>
                 <div style={{ width: 36, height: 20, backgroundColor: '#0073ea', borderRadius: 10, position: 'relative', cursor: 'pointer' }}>
                   <div style={{ width: 16, height: 16, backgroundColor: '#fff', borderRadius: '50%', position: 'absolute', right: 2, top: 2 }}></div>
                 </div>
-              </Flex>
+              </div>
               <Tooltip content={currentUser?.name || "Template owner"}>
                 <Avatar
                   size={Avatar.sizes.SMALL}
@@ -1104,21 +1110,22 @@ export default function TemplateList({ boardId, sessionToken }) {
               <Button kind="tertiary" size="small" style={{ padding: '4px', minWidth: 'auto', color: '#6E7278' }} onClick={() => setShowCreateModal(false)}>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
               </Button>
-            </Flex>
-          </Flex>
+            </div>
+          </div>
 
           {/* Main Content Area */}
-          <Flex style={{ flex: 1, overflow: 'hidden', alignItems: 'stretch' }}>
+          <div className="template-modal-body" style={{ display: 'flex', flexWrap: 'wrap', flex: 1, overflowY: 'auto', alignItems: 'stretch' }}>
 
             {/* Left Area (Editor) */}
-            <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ flex: '1 1 500px', minWidth: '300px', display: 'flex', flexDirection: 'column' }}>
 
               {/* From Row */}
-              <Flex style={{ padding: '12px 24px', borderBottom: '1px solid #E5E7EB', alignItems: 'center' }}>
+              <div style={{ display: 'flex', padding: '12px 24px', borderBottom: '1px solid #E5E7EB', alignItems: 'center' }}>
                 <Text style={{ fontSize: 14, color: '#6E7278', width: 50, fontWeight: 500 }}>From</Text>
                 <div ref={accountDropdownRef} style={{ position: 'relative' }}>
-                  <Flex
+                  <div
                     style={{
+                      display: 'flex',
                       alignItems: 'center',
                       gap: 8,
                       cursor: 'pointer',
@@ -1156,11 +1163,11 @@ export default function TemplateList({ boardId, sessionToken }) {
                     >
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
-                  </Flex>
+                  </div>
 
                   {/* Account Dropdown */}
                   {showAccountDropdown && authStatus.authenticated && (
-                    <Box style={{
+                    <div style={{
                       position: 'absolute',
                       top: '100%',
                       left: 0,
@@ -1173,11 +1180,11 @@ export default function TemplateList({ boardId, sessionToken }) {
                       padding: '16px 0',
                       border: '1px solid #E5E7EB'
                     }}>
-                      <Box style={{ padding: '0 16px 12px' }}>
+                      <div style={{ padding: '0 16px 12px' }}>
                         <Text style={{ fontSize: 13, fontWeight: 600, color: '#676879', marginBottom: 12, display: 'block' }}>
                           {authStatus.provider === 'gmail' ? 'Gmail' : 'Microsoft'}
                         </Text>
-                        <Flex style={{ alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{
                             width: 32,
                             height: 32,
@@ -1204,12 +1211,12 @@ export default function TemplateList({ boardId, sessionToken }) {
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                           </div>
-                        </Flex>
-                      </Box>
+                        </div>
+                      </div>
 
                       <div style={{ height: 1, backgroundColor: '#E5E7EB', margin: '8px 0' }} />
 
-                      <Box
+                      <div
                         style={{
                           padding: '8px 16px',
                           cursor: 'pointer',
@@ -1221,8 +1228,8 @@ export default function TemplateList({ boardId, sessionToken }) {
                         }}
                       >
                         <Text style={{ fontSize: 14, color: '#323338' }}>Add email account</Text>
-                      </Box>
-                    </Box>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div
@@ -1232,7 +1239,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
                 </div>
-              </Flex>
+              </div>
 
               {/* Recipient Rows (To / CC / BCC) — hidden by default, shown on trigger */}
               {showRecipients && (
@@ -1246,7 +1253,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                       error={toError}
                       placeholder="Recipients"
                     />
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', paddingRight: 16, flexShrink: 0, width: '7%', height: 44 }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginRight: 16, flexShrink: 0, width: '15%', height: 44 }}>
                       <span
                         style={{ fontSize: 13, color: '#0073ea', cursor: 'pointer', fontWeight: 500, userSelect: 'none' }}
                         onClick={() => setShowCc(!showCc)}
@@ -1287,7 +1294,7 @@ export default function TemplateList({ boardId, sessionToken }) {
               )}
 
               {/* Subject Row */}
-              <Flex style={{ padding: '12px 24px', borderBottom: '1px solid #E5E7EB', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', padding: '12px 24px', borderBottom: '1px solid #E5E7EB', alignItems: 'center', gap: 12 }}>
                 <Text style={{ fontSize: 14, color: '#6E7278', width: 50, fontWeight: 500 }}>Subject</Text>
                 <input
                   style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: '#323338', padding: '4px 0', backgroundColor: 'transparent' }}
@@ -1298,11 +1305,11 @@ export default function TemplateList({ boardId, sessionToken }) {
                 <div style={{ color: '#6E7278', cursor: 'pointer' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
                 </div>
-              </Flex>
+              </div>
 
               {/* Formatting Toolbar (Restored Design with Clickable Buttons) */}
-              <Flex style={{ padding: '8px 24px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#F5F6F7', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Flex style={{ gap: 4, alignItems: 'center' }}>
+              <div style={{ display: 'flex', padding: '8px 24px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#F5F6F7', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <div
                     onClick={() => editorRef.current?.execute('undo')}
                     style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}
@@ -1319,24 +1326,24 @@ export default function TemplateList({ boardId, sessionToken }) {
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path></svg>
                   </div>
-                </Flex>
+                </div>
 
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
 
-                <Flex style={{ gap: 12, alignItems: 'center', color: '#323338', fontSize: 13, cursor: 'pointer' }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: '#323338', fontSize: 13, cursor: 'pointer' }}>
                   <div style={{ position: 'relative' }} ref={fontDropdownRef}>
-                    <Flex
-                      style={{ alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 4, backgroundColor: showFontDropdown ? '#E5E7EB' : 'transparent' }}
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 4, backgroundColor: showFontDropdown ? '#E5E7EB' : 'transparent' }}
                       onClick={() => setShowFontDropdown(!showFontDropdown)}
                       onMouseOver={(e) => { if (!showFontDropdown) e.currentTarget.style.backgroundColor = '#E5E7EB' }}
                       onMouseOut={(e) => { if (!showFontDropdown) e.currentTarget.style.backgroundColor = 'transparent' }}
                     >
                       <span style={{ fontFamily: selectedFont }}>{selectedFont}</span>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </Flex>
+                    </div>
 
                     {showFontDropdown && (
-                      <Box style={{
+                      <div style={{
                         position: 'absolute',
                         top: '100%',
                         left: 0,
@@ -1405,22 +1412,22 @@ export default function TemplateList({ boardId, sessionToken }) {
                               </div>
                             ))}
                         </div>
-                      </Box>
+                      </div>
                     )}
                   </div>
                   <div style={{ position: 'relative' }} ref={fontSizeDropdownRef}>
-                    <Flex
-                      style={{ alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 4, backgroundColor: showFontSizeDropdown ? '#E5E7EB' : 'transparent' }}
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 4, backgroundColor: showFontSizeDropdown ? '#E5E7EB' : 'transparent' }}
                       onClick={() => setShowFontSizeDropdown(!showFontSizeDropdown)}
                       onMouseOver={(e) => { if (!showFontSizeDropdown) e.currentTarget.style.backgroundColor = '#E5E7EB' }}
                       onMouseOut={(e) => { if (!showFontSizeDropdown) e.currentTarget.style.backgroundColor = 'transparent' }}
                     >
                       <span>{selectedFontSize === 'default' ? 'Default' : selectedFontSize}</span>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </Flex>
+                    </div>
 
                     {showFontSizeDropdown && (
-                      <Box style={{
+                      <div style={{
                         position: 'absolute',
                         top: '100%',
                         left: 0,
@@ -1469,14 +1476,14 @@ export default function TemplateList({ boardId, sessionToken }) {
                             {size === 'default' ? 'Default' : size}
                           </div>
                         ))}
-                      </Box>
+                      </div>
                     )}
                   </div>
-                </Flex>
+                </div>
 
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
 
-                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <div
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => { editorRef.current?.execute('bold'); editorRef.current?.editing.view.focus(); }}
@@ -1513,11 +1520,11 @@ export default function TemplateList({ boardId, sessionToken }) {
                   >
                     S
                   </div>
-                </Flex>
+                </div>
 
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
 
-                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <div
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => { editorRef.current?.execute('bulletedList'); editorRef.current?.editing.view.focus(); }}
@@ -1536,11 +1543,11 @@ export default function TemplateList({ boardId, sessionToken }) {
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={activeFormats.numberedList ? '#0073ea' : '#6E7278'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
                   </div>
-                </Flex>
+                </div>
 
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
 
-                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <div
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => { editorRef.current?.execute('alignment', { value: 'left' }); editorRef.current?.editing.view.focus(); }}
@@ -1568,11 +1575,11 @@ export default function TemplateList({ boardId, sessionToken }) {
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={activeFormats.alignment === 'right' ? '#0073ea' : '#323338'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
                   </div>
-                </Flex>
+                </div>
 
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
 
-                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <div style={{ position: 'relative' }} ref={tableDropdownRef}>
                     <div
                       onMouseDown={(e) => e.preventDefault()}
@@ -1585,7 +1592,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                     </div>
 
                     {showTableDropdown && (
-                      <Box style={{
+                      <div style={{
                         position: 'absolute',
                         top: '100%',
                         left: '50%',
@@ -1639,7 +1646,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                           </div>
                         </div>
 
-                        <Flex style={{ justifyContent: 'flex-end', marginTop: 8, gap: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8, gap: 12 }}>
                           <Button
                             kind="tertiary"
                             size="small"
@@ -1659,15 +1666,15 @@ export default function TemplateList({ boardId, sessionToken }) {
                           >
                             Insert
                           </Button>
-                        </Flex>
-                      </Box>
+                        </div>
+                      </div>
                     )}
                   </div>
-                </Flex>
+                </div>
 
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
 
-                <Flex style={{ gap: 4, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <div
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
@@ -1752,11 +1759,11 @@ export default function TemplateList({ boardId, sessionToken }) {
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                   </div>
-                </Flex>
+                </div>
 
                 <div style={{ width: 1, height: 16, backgroundColor: '#E5E7EB' }} />
 
-                <Flex style={{ gap: 12, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <div style={{ position: 'relative' }} ref={linkDropdownRef}>
                     <div
                       onMouseDown={(e) => e.preventDefault()}
@@ -1769,7 +1776,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                     </div>
 
                     {showLinkDropdown && (
-                      <Box style={{
+                      <div style={{
                         position: 'absolute',
                         top: '100%',
                         left: -100,
@@ -1788,7 +1795,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                       }}>
                         <Text style={{ fontSize: 16, fontWeight: 600, color: '#323338', margin: 0, textAlign: 'left' }}>Add link</Text>
 
-                        <Flex style={{ alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <Text style={{ fontSize: 14, color: '#323338', width: 40, textAlign: 'left' }}>Link</Text>
                           <input
                             type="text"
@@ -1799,9 +1806,9 @@ export default function TemplateList({ boardId, sessionToken }) {
                             style={{ flex: 1, padding: '6px 12px', borderRadius: 4, border: '1px solid #c3c6d4', fontSize: 14, outline: 'none', color: '#323338' }}
                             autoFocus
                           />
-                        </Flex>
+                        </div>
 
-                        <Flex style={{ alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <Text style={{ fontSize: 14, color: '#323338', width: 40, textAlign: 'left' }}>Text</Text>
                           <input
                             type="text"
@@ -1811,9 +1818,9 @@ export default function TemplateList({ boardId, sessionToken }) {
                             onKeyDown={(e) => { if (e.key === 'Enter' && linkData.url) handleInsertLink() }}
                             style={{ flex: 1, padding: '6px 12px', borderRadius: 4, border: '1px solid #c3c6d4', fontSize: 14, outline: 'none', color: '#323338' }}
                           />
-                        </Flex>
+                        </div>
 
-                        <Flex style={{ alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
                           <Text style={{ fontSize: 14, color: '#323338' }}>Track clicks</Text>
                           <div
                             onClick={() => setLinkData({ ...linkData, trackClicks: !linkData.trackClicks })}
@@ -1831,9 +1838,9 @@ export default function TemplateList({ boardId, sessionToken }) {
                               transition: 'all 0.2s'
                             }} />
                           </div>
-                        </Flex>
+                        </div>
 
-                        <Flex style={{ justifyContent: 'space-between', marginTop: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
                           <Button
                             kind="secondary"
                             size="small"
@@ -1851,18 +1858,18 @@ export default function TemplateList({ boardId, sessionToken }) {
                           >
                             Insert
                           </Button>
-                        </Flex>
-                      </Box>
+                        </div>
+                      </div>
                     )}
                   </div>
                   <div style={{ padding: '6px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
                   </div>
-                </Flex>
-              </Flex>
+                </div>
+              </div>
 
               {/* CKEditor Area */}
-              <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <style>{`
                   .ckeditor-wrapper {
                     flex: 1;
@@ -2067,12 +2074,12 @@ export default function TemplateList({ boardId, sessionToken }) {
 
                 {/* Attachments Display Area */}
                 {(formData.attachments && formData.attachments.length > 0) && (
-                  <Box style={{ marginTop: 'auto', padding: '12px 24px', borderTop: '1px solid #E5E7EB', backgroundColor: '#F5F6F7', flexShrink: 0 }}>
+                  <div style={{ marginTop: 'auto', padding: '12px 24px', borderTop: '1px solid #E5E7EB', backgroundColor: '#F5F6F7', flexShrink: 0 }}>
                     <Text style={{ fontSize: 13, fontWeight: 500, color: '#323338', marginBottom: 8 }}>Attachments ({formData.attachments.length})</Text>
-                    <Flex style={{ gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {formData.attachments.map(att => (
-                        <Flex key={att.id} style={{
-                          alignItems: 'center', gap: 8, padding: '4px 8px',
+                        <div key={att.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px',
                           backgroundColor: '#fff', border: '1px solid #E5E7EB', borderRadius: 4
                         }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
@@ -2090,25 +2097,25 @@ export default function TemplateList({ boardId, sessionToken }) {
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                           </div>
-                        </Flex>
+                        </div>
                       ))}
-                    </Flex>
-                  </Box>
+                    </div>
+                  </div>
                 )}
-              </Box>
-            </Box>
+              </div>
+            </div>
 
             {/* Right Sidebar */}
-            <Box style={{ width: 320, borderLeft: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
+            <div className="template-modal-sidebar" style={{ flex: '1 1 320px', minWidth: '300px', borderLeft: '1px solid #E5E7EB', borderTop: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
 
-              <Box style={{ padding: '24px 16px 16px', borderBottom: '1px solid #E5E7EB', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <Flex style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, cursor: 'pointer' }}>
-                  <Flex style={{ alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: '24px 16px 16px', borderBottom: '1px solid #E5E7EB', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     <Heading style={{ fontSize: 16, margin: 0, fontWeight: 500, color: '#323338' }}>Auto-populated fields</Heading>
-                  </Flex>
+                  </div>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                </Flex>
+                </div>
 
                 <div style={{ position: 'relative', marginBottom: 16 }}>
                   <input
@@ -2121,7 +2128,7 @@ export default function TemplateList({ boardId, sessionToken }) {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-                  <Flex style={{ flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {[
                       { id: '__item_name__', title: 'Item Name', type: 'system' },
                       { id: '__user_name__', title: 'User Name', type: 'system' },
@@ -2176,16 +2183,16 @@ export default function TemplateList({ boardId, sessionToken }) {
                           {col.title}
                         </div>
                       ))}
-                  </Flex>
+                  </div>
                 </div>
-              </Box>
+              </div>
 
-              <Box style={{ padding: '16px 16px', flexShrink: 0, maxHeight: 200, overflowY: 'auto', borderTop: '1px solid #E5E7EB' }}>
-                <Flex style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, cursor: 'pointer' }}>
+              <div style={{ padding: '16px 16px', flexShrink: 0, maxHeight: 300, overflowY: 'auto', borderTop: '1px solid #E5E7EB' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, cursor: 'pointer' }}>
                   <Heading style={{ fontSize: 14, margin: 0, fontWeight: 500, color: '#323338' }}>File columns as attachments</Heading>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7278" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                </Flex>
-                <Flex style={{ flexWrap: 'wrap', gap: 8 }}>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {boardAssets.map((asset) => (
                     <div
                       key={asset.id}
@@ -2280,10 +2287,10 @@ export default function TemplateList({ boardId, sessionToken }) {
                   {boardAssets.length === 0 && (
                     <Text style={{ fontSize: 13, color: '#9699a6', fontStyle: 'italic' }}>No files found on board</Text>
                   )}
-                </Flex>
-              </Box>
-            </Box>
-          </Flex>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Footer */}
           <div style={{ padding: '12px 24px', borderTop: '1px solid #E5E7EB', backgroundColor: '#fff', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
@@ -2339,10 +2346,10 @@ export default function TemplateList({ boardId, sessionToken }) {
                     onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#D2E4FF'}
                     onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
-                    <Flex style={{ alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ color: '#6E7278', display: 'flex', alignItems: 'center' }}>{item.icon}</div>
                       <Text style={{ fontSize: 13 }}>{item.label}</Text>
-                    </Flex>
+                    </div>
                     {item.shortcut && (
                       <Text style={{ fontSize: 11, color: '#6E7278', border: '1px solid #c3c6d4', borderRadius: 2, padding: '0 4px', backgroundColor: '#fff' }}>
                         {item.shortcut}
@@ -2395,7 +2402,7 @@ export default function TemplateList({ boardId, sessionToken }) {
               </div>
             </div>
           )}
-        </Box>
+        </div>
       </Modal>
 
       <LoginModal
@@ -2464,6 +2471,6 @@ export default function TemplateList({ boardId, sessionToken }) {
           </div>
         </div>
       </Modal>
-    </Box>
+    </div>
   )
 }

@@ -126,7 +126,7 @@ export default function EmailRecipientField({
   }
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '93%' }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '85%' }}>
       <div
         style={{
           display: 'flex',
@@ -173,7 +173,7 @@ export default function EmailRecipientField({
         />
       </div>
       {error && (
-        <div style={{ paddingLeft: 64, paddingBottom: 6, fontSize: 12, color: '#e44', marginTop: -2 }}>
+        <div style={{ paddingLeft: 50, paddingBottom: 6, fontSize: 13, color: '#e44', marginTop: -2 }}>
           {error}
         </div>
       )}

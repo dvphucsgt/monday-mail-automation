@@ -441,3 +441,64 @@ button:active,
   border: 1px solid #E5E7EB !important;
   background-color: #F8F9FA !important;
 }
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .layout-wrapper {
+    padding: 16px !important;
+  }
+  .layout-header-box {
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+  .layout-header-flex {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+  .layout-nav-flex {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .layout-nav-flex a {
+    white-space: nowrap;
+  }
+  .template-list-wrapper {
+    padding: 16px !important;
+  }
+  .template-list-header-box {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+  .template-list-header-flex {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+  .custom-template-content input {
+    width: 100% !important;
+  }
+  .custom-template-modal [data-testid="modal-content"] .flex-row-responsive {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .template-modal-body {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .template-modal-sidebar {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid #E5E7EB !important;
+  }
+  .create-template-btn {
+    width: auto !important;
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 10px 15px !important;
+  }
+}

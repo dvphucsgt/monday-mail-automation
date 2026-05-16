@@ -7,11 +7,11 @@ const Layout = ({ children, context }) => {
   const location = useLocation()
 
   return (
-    <Box style={{ padding: '40px', backgroundColor: '#f5f6f8', minHeight: '100vh' }}>
+    <div className="layout-wrapper" style={{ padding: 'clamp(16px, 4vw, 40px)', backgroundColor: '#f5f6f8', minHeight: '100vh' }}>
       {/* Header / Navbar */}
-      <Box style={{ marginBottom: '32px', backgroundColor: '#fff', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        <Flex style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <Flex style={{ gap: 16, alignItems: 'center' }}>
+      <div className="layout-header-box" style={{ marginBottom: 'clamp(16px, 3vw, 32px)', backgroundColor: '#fff', padding: 'clamp(16px, 3vw, 24px)', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+        <div className="layout-header-flex" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <div style={{
               width: 48,
               height: 48,
@@ -35,8 +35,9 @@ const Layout = ({ children, context }) => {
             }}>
               AutomatedMail
             </Heading>
-          </Flex>
-          <Flex style={{ gap: 8 }}>
+          </div>
+          <style>{`.layout-nav-flex::-webkit-scrollbar { display: none; }`}</style>
+          <div className="layout-nav-flex" style={{ display: 'flex', overflowX: 'auto', gap: 8, paddingBottom: 4, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {[
               { name: 'Templates', path: '/templates' },
               { name: 'Integrations', path: '/integrations' },
@@ -58,7 +59,8 @@ const Layout = ({ children, context }) => {
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     fontFamily: 'Inter, sans-serif',
-                    textDecoration: 'none'
+                    textDecoration: 'none',
+                    whiteSpace: 'nowrap'
                   }}
                   onMouseOver={(e) => {
                     if (!isActive) {
@@ -77,15 +79,15 @@ const Layout = ({ children, context }) => {
                 </Link>
               )
             })}
-          </Flex>
-        </Flex>
-      </Box>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
-      <Box style={{ maxWidth: 1400, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
         {children}
-      </Box>
-    </Box>
+      </div>
+    </div>
   )
 }
 
