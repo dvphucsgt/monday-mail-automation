@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS integrations (
   trigger_value TEXT,
   recipient_columns TEXT,
   cc_enabled INTEGER DEFAULT 0,
+  user_id TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (board_id) REFERENCES boards(board_id) ON DELETE CASCADE,

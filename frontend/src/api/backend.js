@@ -106,7 +106,57 @@ export const backendAPI = {
     }
     )
     return response.json()
+  },
+
+  // Stats API
+  async getOverviewStats(boardId, token, days = 7) {
+    const response = await fetch(
+      `${API_BASE_URL}/stats/overview?board_id=${boardId}&days=${days}`, {
+      headers: getHeaders(token)
+    }
+    )
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Failed to fetch overview stats')
+    return data
+  },
+
+  async getTrendStats(boardId, token, days = 7) {
+    const response = await fetch(
+      `${API_BASE_URL}/stats/trend?board_id=${boardId}&days=${days}`, {
+      headers: getHeaders(token)
+    }
+    )
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Failed to fetch trend stats')
+    return data
+  },
+
+  async getTemplateStats(boardId, token) {
+    const response = await fetch(
+      `${API_BASE_URL}/stats/templates?board_id=${boardId}`, {
+      headers: getHeaders(token)
+    }
+    )
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Failed to fetch template stats')
+    return data
+  },
+
+  async getRecipientStats(boardId, token, limit = 10) {
+    const response = await fetch(
+      `${API_BASE_URL}/stats/recipients?board_id=${boardId}&limit=${limit}`, {
+      headers: getHeaders(token)
+    }
+    )
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Failed to fetch recipient stats')
+    return data
   }
 }
 
 export default backendAPI
+
+export const getOverviewStats = (boardId, token, days) => backendAPI.getOverviewStats(boardId, token, days)
+export const getTrendStats = (boardId, token, days) => backendAPI.getTrendStats(boardId, token, days)
+export const getTemplateStats = (boardId, token) => backendAPI.getTemplateStats(boardId, token)
+export const getRecipientStats = (boardId, token, limit) => backendAPI.getRecipientStats(boardId, token, limit)

@@ -5,9 +5,9 @@ import 'react-toastify/dist/ReactToastify.css'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AppContext from './utils/AppContext.jsx'
 import AuthPage from './pages/AuthPage.jsx'
+import DashboardPage from './pages/DashboardPage.jsx'
 import TemplatesPage from './pages/TemplatesPage.jsx'
 import IntegrationPage from './pages/IntegrationPage.jsx'
-import SettingsPage from './pages/SettingsPage.jsx'
 import Layout from './components/Layout.jsx'
 
 const mondaySDK = mondaySdk();
@@ -97,6 +97,7 @@ function App() {
       <Layout context={context}>
         <Routes>
           <Route path="/auth" element={<AuthPage onSuccess={handleAuthSuccess} context={context} />} />
+          <Route path="/dashboard" element={<DashboardPage context={context} sessionToken={sessionToken} />} />
           <Route
             path="/templates"
             element={<TemplatesPage context={context} sessionToken={sessionToken} />}
@@ -105,11 +106,7 @@ function App() {
             path="/integrations"
             element={<IntegrationPage context={context} sessionToken={sessionToken} />}
           />
-          <Route
-            path="/settings"
-            element={<SettingsPage context={context} />}
-          />
-          <Route path="/" element={<Navigate to={`/templates${location.search}`} replace />} />
+          <Route path="/" element={<Navigate to={`/dashboard${location.search}`} replace />} />
         </Routes>
       </Layout>
       <ToastContainer
